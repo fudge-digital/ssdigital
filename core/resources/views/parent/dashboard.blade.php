@@ -26,17 +26,22 @@
                 <p class="text-gray-600 text-sm mb-1">Usia: {{ $student->profile->usia }} tahun</p>
                 <p class="text-gray-600 text-sm">Kategori Umur: {{ $student->profile->kelompok_umur }} {{ $student->profile->jenis_kelamin_label }}</p>
                 <div class="mt-4">
-                    <a href="{{ route('siswa.show', $student->id) }}" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded text-xs">
-                        Detail Siswa
-                    </a>
                     @if($student->siswaProfile->status !== 'tidak_aktif')
-                    <a href="{{ route('siswa.edit', $student->id) }}" class="bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded text-xs ml-2">
-                        Edit Data Siswa
-                    </a>
+                        <a href="{{ route('siswa.show', $student->id) }}" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded text-xs">
+                            Detail Siswa
+                        </a>
                     @else
-                    <a href="#" class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-3 rounded text-xs ml-2 cursor-not-allowed opacity-50">
-                        Edit Data Siswa
-                    </a>
+                        <a href="#" class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-3 rounded text-xs ml-2 cursor-not-allowed opacity-50">
+                            Detail Siswa
+                        </a>
+                    @if($student->siswaProfile->status !== 'tidak_aktif')
+                        <a href="{{ route('siswa.edit', $student->id) }}" class="bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded text-xs ml-2">
+                            Edit Data Siswa
+                        </a>
+                    @else
+                        <a href="#" class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-3 rounded text-xs ml-2 cursor-not-allowed opacity-50">
+                            Edit Data Siswa
+                        </a>
                     @endif
                 </div>
             </div>
