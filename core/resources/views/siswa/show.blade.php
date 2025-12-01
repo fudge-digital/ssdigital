@@ -129,8 +129,8 @@
 
     <div class="flex justify-end">
         @if($student->profile && $student->profile->status === 'tidak_aktif')
-        <a href="{{ route('siswa.edit', $student->id) }}" 
-            class="inline-block px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition" cusror="not-allowed" disabled>
+        <a href="#" 
+            class="inline-block px-4 py-2 bg-gray-600 text-white text-sm rounded cusror-not-allowed" disabled>
             <i class="fa-solid fa-pen-to-square mr-2"></i>Edit Profil Siswa
         </a>
         @else
@@ -141,21 +141,9 @@
         @endif
     </div>
 
-    {{-- Section khusus untuk pelatih, admin --}}
-    @if(auth()->user()->hasRole(['admin','pelatih','asisten_pelatih','manajer_tim']))
-        {{-- @include('siswa.partials.absensi') --}}
-        Absensi section untuk admin dan pelatih (sementara dihilangkan)
-    @endif
-
     {{-- Section untuk orang tua --}}
-    @if(auth()->user()->isOrangTua())
+    @if(auth()->user()->isOrangTua() ?? $student->profile->status !== 'tidak_aktif')
         @include('partials.iuran-summary')
-    @endif
-
-    {{-- Section untuk siswa sendiri --}}
-    @if(auth()->user()->isSiswa() && auth()->id() == $student->id)
-        {{-- @include('siswa.partials.myprofile') --}}
-        Profil section untuk siswa sendiri (sementara dihilangkan)
     @endif
 
 </div>
