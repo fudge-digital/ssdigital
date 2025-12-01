@@ -52,16 +52,4 @@ jobs:
           local-dir: ./core/public/build/
           dangerous-clean-slate: true
           state-name: .ftp-deploy-build.json
-
-       # Create Symlink via SSH
-      - name: 🔗 Create storage symlink
-        uses: appleboy/ssh-action@v0.1.10
-        with:
-          host: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            rm -rf /home/u137382562/domains/app.satriasiliwangibasketball.id/public_html/storage
-            ln -s /home/u137382562/domains/app.satriasiliwangibasketball.id/public_html/core/storage/app/public \
-            /home/u137382562/domains/app.satriasiliwangibasketball.id/public_html/storage
-            echo "Symlink berhasil dibuat"
+          
