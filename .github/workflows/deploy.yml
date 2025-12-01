@@ -29,15 +29,25 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: /public_html/
+          server-dir: /public_html/core/
+          local-dir: ./core/
           exclude: |
+            **/storage/**
+            **/bootstrap/cache/**
             **/.git*
             **/.github*
             **/node_modules/**
             **/tests/**
-            **/docker/**
-            storage/logs/**
-            storage/framework/cache/**
-            storage/framework/views/**
           dangerous-clean-slate: false
-          state-name: .ftp-deploy-sync-state.json
+          state-name: .ftp-deploy-core.json
+
+      - name: 🚀 Deploy Vite build output
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: /public_html/build/
+          local-dir: ./public/build/
+          dangerous-clean-slate: true
+          state-name: .ftp-deploy-build.json
