@@ -37,7 +37,7 @@
             {{-- Meta --}}
             <div class="flex items-center gap-4 text-sm text-gray-500 mb-6">
                 <span><i class="fa-solid fa-user mr-1"></i> {{ $post->author->name ?? 'Admin' }}</span>
-                <span><i class="fa-solid fa-calendar mr-1"></i> {{ $post->created_at->format('d M Y') }}</span>
+                <span><i class="fa-solid fa-calendar mr-1"></i> {{ optional($post->published_at)->format('d M Y') ?? optional($post->created_at)->format('d M Y') }}</span>
             </div>
 
             {{-- Content --}}

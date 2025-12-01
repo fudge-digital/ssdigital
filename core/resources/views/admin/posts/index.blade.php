@@ -48,7 +48,7 @@
                 <tr class="border-b">
                     <td class="px-4 py-3 font-semibold text-gray-800">{{ $post->title }}</td>
                     <td class="px-4 py-3 text-gray-600">{{ $post->category->name }}</td>
-                    <td class="px-4 py-3 text-gray-600">{{ $post->created_at->format('d M Y') }}</td>
+                    <td class="px-4 py-3 text-gray-600">{{ optional($post->published_at)->format('d M Y') ?? optional($post->created_at)->format('d M Y') }}</td>
                     <td class="px-4 py-3 text-right text-sm">
                         <a href="{{ route('posts.show', $post->slug) }}"
                             class="text-gray-700 py-1 px-2 rounded mr-3 hover:bg-gray-500 hover:text-white transition">View</a>
