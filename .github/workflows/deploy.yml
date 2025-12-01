@@ -49,6 +49,6 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: /public_html/build/
-          local-dir: ./public/build/
+          local-dir: ./core/public/build/
           dangerous-clean-slate: true
           state-name: .ftp-deploy-build.json
