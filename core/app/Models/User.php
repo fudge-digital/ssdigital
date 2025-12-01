@@ -90,8 +90,11 @@ class User extends Authenticatable
                 }
             }
 
-            if ($user->role === 'siswa' && $user->siswaProfile()->doesntExist()) {
-                $user->siswaProfile()->create([]);
+            if ($user->role === 'siswa' && request()->is('admin/*')) {
+                $user->siswaProfile()->create([
+                    'nama_lengkap' => $user->name,
+                    'status' => 'tidak_aktif',
+                ]);
             }
         });
     }
