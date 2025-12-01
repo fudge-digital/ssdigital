@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Masuk')</title>
 
-    <link rel="stylesheet" href="{{ asset('assets/fontawesome/css/all.min.css') }}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.js"></script>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
