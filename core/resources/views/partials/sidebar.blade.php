@@ -54,7 +54,7 @@
                     </a>
                 @endif
 
-                @if(in_array($student->status, ['tidak_aktif', 'suspended']))
+                @if(!in_array($student->status, ['tidak_aktif', 'suspended']))
                     <a href="#" class="block px-3 py-1.5 rounded hover:bg-green-700">
                         <i class="fa-regular fa-file-invoice mr-2"></i> Pembayaran Pertandingan
                     </a>

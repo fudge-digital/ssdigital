@@ -30,12 +30,15 @@ class StudentHelper
 
     public static function generateNISS($lastNissNumber = null)
     {
-        $year = now()->format('y'); // contoh: 25
-        $prefix = 'SS-' . $year . '-';
+        // $year = now()->format('y'); // contoh: 25
+        // $prefix = 'SS-' . $year . '-';
 
-        $nextNumber = $lastNissNumber ? $lastNissNumber + 1 : 1;
-        $formatted = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+        // $nextNumber = $lastNissNumber ? $lastNissNumber + 1 : 1;
+        // $formatted = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+        // return $prefix . $formatted;
 
-        return $prefix . $formatted;
+        $nissDefault = 'SS-00-00';
+
+        return $nissDefault;
     }
 }
