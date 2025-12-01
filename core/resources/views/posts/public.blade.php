@@ -63,7 +63,7 @@
                         <p class="text-sm text-gray-500 line-clamp-3 mb-3">{{ $post->excerpt }}</p>
 
                         <div class="flex justify-between text-xs text-gray-400">
-                            <span>{{ $post->created_at->format('d M Y') }}</span>
+                            <span>{{ optional($post->published_at)->format('d M Y') ?? optional($post->created_at)->format('d M Y') }}</span>
                             <span>{{ $post->author->name ?? 'Admin' }}</span>
                         </div>
                     </div>
