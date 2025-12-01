@@ -46,23 +46,25 @@
     </div>
 
     {{-- Documents & Jadwal Latihan--}}
-    <div class="grid grid-cols-2 gap-4">
-        <div>
-            <h2 class="col-span-full text-lg font-semibold text-gray-700 mb-4">Jadwal Latihan Bulan {{ now()->format('F Y') }}</h2>
-            <div class="bg-white shadow-lg rounded-xl px-4 py-4 pb-4">
-                @if($jadwalLatihan)
-                    <div class="prose max-w-none mb-6">
-                        {!! $jadwalLatihan->content !!}
-                    </div>
-                @else
-                    <p class="text-gray-500 text-center italic mb-6">
-                        Belum ada jadwal diinformasikan
-                    </p>
-                @endif
+    @if($student->siswaProfile->status === 'aktif')
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <h2 class="col-span-full text-lg font-semibold text-gray-700 mb-4">Jadwal Latihan Bulan {{ now()->format('F Y') }}</h2>
+                <div class="bg-white shadow-lg rounded-xl px-4 py-4 pb-4">
+                    @if($jadwalLatihan)
+                        <div class="prose max-w-none mb-6">
+                            {!! $jadwalLatihan->content !!}
+                        </div>
+                    @else
+                        <p class="text-gray-500 text-center italic mb-6">
+                            Belum ada jadwal diinformasikan
+                        </p>
+                    @endif
+                </div>
             </div>
+            @include('partials.iuran-summary')
         </div>
-        @include('partials.iuran-summary')
-    </div>
+    @endif
 
     {{-- INFO PEMBAYARAN --}}
     @if ($nonActiveStudents->count() > 0) 
