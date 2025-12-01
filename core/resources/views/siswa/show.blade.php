@@ -128,21 +128,14 @@
     </div>
 
     <div class="flex justify-end">
-        @if($student->profile && $student->profile->status === 'tidak_aktif')
-        <a href="#" 
-            class="inline-block px-4 py-2 bg-gray-600 text-white text-sm rounded cusror-not-allowed" disabled>
-            <i class="fa-solid fa-pen-to-square mr-2"></i>Edit Profil Siswa
-        </a>
-        @else
         <a href="{{ route('siswa.edit', $student->id) }}" 
             class="inline-block px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition">
             <i class="fa-solid fa-pen-to-square mr-2"></i>Edit Profil Siswa
         </a>
-        @endif
     </div>
 
     {{-- Section untuk orang tua --}}
-    @if(auth()->user()->isOrangTua() ?? $student->profile->status !== 'tidak_aktif')
+    @if(auth()->user()->isOrangTua())
         @include('partials.iuran-summary')
     @endif
 
