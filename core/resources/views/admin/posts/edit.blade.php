@@ -42,8 +42,8 @@
 
             <div class="mb-4">
                 <label>Tanggal Posting / Jadwal</label>
-                <input type="date" name="published_at" class="form-control"
-                    value="{{ old('published_at', $post->published_at->format('Y-m-d')) }}">
+                <input type="date" name="published_at" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500"
+                    value="{{ old('published_at', optional($post->published_at)->format('Y-m-d')) }}" placeholder="Pilih tanggal">
             </div>
 
             <div>
