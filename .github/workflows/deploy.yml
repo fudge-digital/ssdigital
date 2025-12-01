@@ -20,6 +20,7 @@ jobs:
 
       - name: 🧩 Build frontend (Vite)
         run: |
+          cd core
           npm ci
           npm run build
 
