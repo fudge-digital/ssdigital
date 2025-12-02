@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\UserProfile;
 use App\Models\SiswaProfile;
+use App\Notifications\NewParentRegistered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -106,6 +107,11 @@ class RegistrationController extends Controller
 
             // 4️⃣ Kirim email konfirmasi ke orang tua
             Mail::to($parent->email)->send(new ParentRegistrationMail($parent, $passwordOrtu, $students));
+
+            $admins = User::where('role', 'admin')->get();
+            foreach ($admins as $admin) {
+                $admin->notify(new NewParentRegistered($parent));
+            }
 
             return redirect()->route('register.success')->with('success', 'Pendaftaran berhasil! Silakan cek email untuk detail login.');
             

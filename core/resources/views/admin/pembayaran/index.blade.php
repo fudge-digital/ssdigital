@@ -102,6 +102,30 @@
                             @endif
                         </td>
                     </tr>
+                    <div id="previewModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 bg-black bg-opacity-60 flex justify-center items-center">
+                        <div class="relative p-4 w-full max-w-3xl max-h-[85vh]">
+                            <div class="relative bg-white rounded-lg shadow-lg overflow-hidden">
+                                
+                                <!-- Header -->
+                                <div class="flex items-center justify-between p-4 border-b">
+                                    <h3 class="text-lg font-semibold">Preview Bukti Pembayaran</h3>
+                                    <button type="button" data-modal-hide="previewModal"
+                                            class="text-gray-500 hover:text-gray-700 text-2xl font-bold">✕</button>
+                                </div>
+
+                                <!-- Content -->
+                                <div id="modalContent" class="p-4 overflow-y-auto max-h-[75vh]">
+                                    <!-- dynamic content -->
+                                </div>
+                                
+                                <div id="modalFooter" class="p-4 border-t text-right">
+                                    <a href="{{ $fileUrl }}" target="_blank" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Download
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 @empty
                     <tr>
                         <td colspan="7" class="text-center text-gray-500 py-6">Belum ada data pembayaran.</td>
@@ -109,31 +133,6 @@
                 @endforelse
             </tbody>
         </table>
-
-        <div id="previewModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 bg-black bg-opacity-60 flex justify-center items-center">
-            <div class="relative p-4 w-full max-w-3xl max-h-[85vh]">
-                <div class="relative bg-white rounded-lg shadow-lg overflow-hidden">
-                    
-                    <!-- Header -->
-                    <div class="flex items-center justify-between p-4 border-b">
-                        <h3 class="text-lg font-semibold">Preview Bukti Pembayaran</h3>
-                        <button type="button" data-modal-hide="previewModal"
-                                class="text-gray-500 hover:text-gray-700 text-2xl font-bold">✕</button>
-                    </div>
-
-                    <!-- Content -->
-                    <div id="modalContent" class="p-4 overflow-y-auto max-h-[75vh]">
-                        <!-- dynamic content -->
-                    </div>
-                    
-                    <div id="modalFooter" class="p-4 border-t text-right">
-                        <a href="{{ $fileUrl }}" target="_blank" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
-                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Download
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
 
     </div>
 </div>
