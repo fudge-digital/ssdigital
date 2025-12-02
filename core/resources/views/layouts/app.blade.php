@@ -36,17 +36,19 @@
                         {{-- BADGE --}}
                         @php $role = Auth::user()->role; @endphp
 
-                        {{-- ADMIN BADGE --}}
+                        {{-- ADMIN --}}
                         @if($role === 'admin' && ($pendingCount + $requestBillingCount + ($newParentCount ?? 0)) > 0)
-                            <span class="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
+                            <span class="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold
+                            w-5 h-5 flex items-center justify-center rounded-full">
                                 {{ $pendingCount + $requestBillingCount + ($newParentCount ?? 0) }}
                             </span>
                         @endif
 
-                        {{-- PARENT BADGE --}}
+                        {{-- ORANG TUA --}}
                         @if($role === 'orang_tua' && $notificationCount > 0)
                             <span id="notificationBadge"
-                                class="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
+                                class="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold
+                                w-5 h-5 flex items-center justify-center rounded-full">
                                 {{ $notificationCount }}
                             </span>
                         @endif
@@ -64,46 +66,46 @@
                         @if($role === 'admin')
                             @forelse($combinedNotif as $item)
 
-                                {{-- Pending pembayaran --}}
+                                {{-- Pending Pembayaran --}}
                                 @if($item['type'] === 'pending')
-                                    @if($item['parent'])
-                                        <a href="{{ route('admin.iuran.index', ['parent' => $item['parent']->id]) }}"
-                                            class="block px-4 py-3 hover:bg-gray-100 border-b">
-                                            <p class="font-medium">
-                                                {{ $item['parent']->userProfile->nama_lengkap ?? $item['parent']->name }}
-                                            </p>
-                                            <p class="text-sm text-gray-600">
-                                                Pembayaran untuk {{ $item['total_transaksi'] }} siswa pending
-                                            </p>
-                                            <p class="text-sm font-bold text-gray-800">
-                                                Rp {{ number_format($item['total_nominal'], 0, ',', '.') }}
-                                            </p>
-                                        </a>
-                                    @endif
+                                    <a href="{{ route('admin.iuran.index', ['parent' => $item['parent']->id]) }}"
+                                    class="block px-4 py-3 hover:bg-gray-100 border-b">
+                                        <p class="font-medium">
+                                            {{ $item['parent']->userProfile->nama_lengkap ?? $item['parent']->name }}
+                                        </p>
+                                        <p class="text-sm text-gray-600">
+                                            {{ $item['total_transaksi'] }} pembayaran siswa pending
+                                        </p>
+                                        <p class="text-sm font-bold text-gray-800">
+                                            Rp {{ number_format($item['total_nominal'], 0, ',', '.') }}
+                                        </p>
+                                    </a>
+                                @endif
 
                                 {{-- Request Billing --}}
-                                @elseif($item['type'] === 'request')
+                                @if($item['type'] === 'request')
                                     <a href="{{ route('admin.iuran.requests') }}"
-                                        class="block px-4 py-3 hover:bg-gray-100 border-b">
+                                    class="block px-4 py-3 hover:bg-gray-100 border-b">
                                         <p class="font-medium">{{ $item['title'] }}</p>
                                         <p class="text-sm text-gray-600">{{ $item['message'] }}</p>
-                                        <p class="text-xs text-gray-400">{{ $item['created_at']->diffForHumans() }}</p>
+                                        <p class="text-xs text-gray-400">
+                                            {{ $item['created_at']->diffForHumans() }}
+                                        </p>
                                     </a>
+                                @endif
 
-                                {{-- New Parent Registered --}}
-                                @elseif($item['type'] === 'new_parent')
-                                    @if($item['parent'])
-                                        <a href="{{ route('admin.iuran.index', $item['parent']->id) }}"
-                                            class="block px-4 py-3 hover:bg-gray-100 border-b">
-                                            <p class="font-medium">
-                                                Parent baru: {{ $item['parent']->userProfile->nama_lengkap ?? $item['parent']->name }}
-                                            </p>
-                                            <p class="text-sm text-gray-600">
-                                                Baru mendaftar, silakan verifikasi
-                                            </p>
-                                            <p class="text-xs text-gray-400">{{ $item['created_at']->diffForHumans() }}</p>
-                                        </a>
-                                    @endif
+                                {{-- Parent Baru --}}
+                                @if($item['type'] === 'new_parent')
+                                    <a href="{{ route('admin.iuran.index', $item['parent']->id) }}"
+                                    class="block px-4 py-3 hover:bg-gray-100 border-b">
+                                        <p class="font-medium">
+                                            Parent Baru: {{ $item['parent']->userProfile->nama_lengkap ?? $item['parent']->name }}
+                                        </p>
+                                        <p class="text-sm text-gray-600">Menunggu verifikasi</p>
+                                        <p class="text-xs text-gray-400">
+                                            {{ $item['created_at']->diffForHumans() }}
+                                        </p>
+                                    </a>
                                 @endif
 
                             @empty
@@ -115,7 +117,7 @@
                         @if($role === 'orang_tua')
                             @forelse($approvedNotification as $notif)
                                 <a href="{{ route('parent.iuran.index') }}"
-                                    class="block px-4 py-3 hover:bg-gray-100 border-b">
+                                class="block px-4 py-3 hover:bg-gray-100 border-b">
 
                                     <p class="font-medium">
                                         Pembayaran bulan {{ $notif->data['bulan'] }} telah diverifikasi
@@ -155,32 +157,17 @@
     <script src="//unpkg.com/alpinejs" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.0/flowbite.min.js"></script>
     <script>
-        const button = document.getElementById('notificationButton');
+        const btn = document.getElementById('notificationButton');
         const dropdown = document.getElementById('notificationDropdown');
 
-        button.addEventListener('click', () => {
+        btn.addEventListener('click', () => {
             dropdown.classList.toggle('hidden');
         });
 
-        // close when clicking outside
-        document.addEventListener('click', function (e) {
-            if (!button.contains(e.target) && !dropdown.contains(e.target)) {
+        document.addEventListener('click', (e) => {
+            if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
                 dropdown.classList.add('hidden');
             }
-        });
-
-        document.getElementById('notificationButton').addEventListener('click', function () {
-            fetch("{{ route('notifications.readAll') }}", {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': "{{ csrf_token() }}",
-                    'Content-Type': 'application/json',
-                },
-            })
-            .then(() => {
-                const badge = document.getElementById('notificationBadge');
-                if (badge) badge.classList.add('hidden');
-            });
         });
     </script>
     

@@ -28,7 +28,8 @@ class StudentHelper
         return 'KU Veteran';
     }
 
-    public static function generateNISS($lastNissNumber = null)
+    //public static function generateNISS($lastNissNumber = null)
+    public static function generateNISS($nissDefault = null)
     {
         // $year = now()->format('y'); // contoh: 25
         // $prefix = 'SS-' . $year . '-';
