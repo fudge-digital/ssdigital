@@ -61,6 +61,31 @@ class PembayaranController extends Controller
         return back()->with('success', 'Pembayaran diverifikasi dan seluruh siswa berhasil diaktifkan.');
     }
 
+    public function approveReRegistration($id)
+    {
+        $pembayaran = PembayaranSiswa::findOrFail($id);
+
+        // Update pembayaran
+        $pembayaran->update([
+            'status' => 'approve',
+            'diverifikasi_oleh' => Auth::id(),
+            'tanggal_verifikasi' => now(),
+        ]);
+
+        // Ambil semua siswa di detail
+        $siswaIds = DB::table('pembayaran_siswa_detail')
+            ->where('pembayaran_id', $pembayaran->id)
+            ->pluck('siswa_id');
+
+        // Update status semua siswa
+        User::whereIn('id', $siswaIds)->update([
+            'status' => 'aktif',
+            'updated_at' => now()
+        ]);
+
+        return back()->with('success', 'Registrasi ulang berhasil diverifikasi, semua siswa telah diaktifkan.');
+    }
+
     /**
      * Mengaktifkan siswa + generate NISS jika belum ada.
      */

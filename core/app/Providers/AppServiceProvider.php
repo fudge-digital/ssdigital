@@ -4,23 +4,18 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use App\Models\IuranBulanan;
+use App\Models\PembayaranSiswa;
 use App\Models\User;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Auth;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
         View::composer('*', function ($view) {
@@ -43,13 +38,14 @@ class AppServiceProvider extends ServiceProvider
             $verifiedCount = 0;
             $approvedNotifCount = 0;
             $notificationCount = 0;
+            $newParentCount = 0;
 
             // ====================
             // ROLE ADMIN
             // ====================
             if ($role === 'admin') {
 
-                // Pending payment grouping
+                // Pending iuran bulanan
                 $pending = IuranBulanan::with('siswa.parents.userProfile')
                     ->where('status', 'pending')
                     ->latest()
@@ -64,23 +60,23 @@ class AppServiceProvider extends ServiceProvider
                         'parent' => $parent,
                         'total_transaksi' => $group->count(),
                         'total_nominal' => $group->sum('jumlah'),
-                        'created_at' => now(),
+                        'created_at' => $group->first()->created_at,
                     ];
                 });
 
                 $pendingCount = $pendingGrouped->count();
 
-                // Request billing notifications (Collection filter)
-                $requestBillingNotif = $user->unreadNotifications->filter(function($notif){
+                // Billing request notif
+                $requestBillingNotif = $user->unreadNotifications->filter(function ($notif) {
                     return $notif->type === 'App\\Notifications\\IuranRequestNotification';
                 });
 
                 $requestBillingCount = $requestBillingNotif->count();
 
-                // ---------------- Parent baru ----------------
-                $newParentsNotif = $user->unreadNotifications->filter(function($notif){
+                // Notifikasi parent baru
+                $newParentsNotif = $user->unreadNotifications->filter(function ($notif) {
                     return $notif->type === 'App\\Notifications\\NewParentRegistered';
-                })->map(function($notif){
+                })->map(function ($notif) {
                     return [
                         'type' => 'new_parent',
                         'parent' => User::find($notif->data['parent_id']),
@@ -90,11 +86,13 @@ class AppServiceProvider extends ServiceProvider
 
                 $newParentCount = $newParentsNotif->count();
 
-                // ---------------- Combine all notifications ----------------
+                // ====================
+                // ADD TO COMBINED FOR ADMIN
+                // ====================
                 $combinedNotif = collect();
 
                 foreach ($pendingGrouped as $item) {
-                    if($item['parent']) {
+                    if ($item['parent']) {
                         $combinedNotif->push($item);
                     }
                 }
@@ -109,21 +107,24 @@ class AppServiceProvider extends ServiceProvider
                 }
 
                 foreach ($newParentsNotif as $np) {
-                    if($np['parent']) {
+                    if ($np['parent']) {
                         $combinedNotif->push($np);
                     }
                 }
 
-                // Sort by latest
+                // urutkan terbaru
                 $combinedNotif = $combinedNotif->sortByDesc('created_at')->values();
+
+                // FINAL badge admin
+                $notificationCount = $pendingCount + $requestBillingCount + $newParentCount;
             }
 
             // ====================
-            // ROLE ORANG TUA
+            // ROLE ORANG_TUA
             // ====================
             if ($role === 'orang_tua') {
 
-                // List pembayaran approved
+                // show approved iuran
                 $verifiedList = IuranBulanan::where('status', 'paid')
                     ->whereIn('siswa_id', $user->children->pluck('id'))
                     ->latest()
@@ -132,26 +133,25 @@ class AppServiceProvider extends ServiceProvider
 
                 $verifiedCount = $verifiedList->count();
 
-                // Notifications for approved billing requests
-                $approvedNotification = $user->unreadNotifications->filter(function($notif){
+                $approvedNotification = $user->unreadNotifications->filter(function ($notif) {
                     return $notif->type === 'App\\Notifications\\IuranApprovedNotification';
                 });
 
                 $approvedNotifCount = $approvedNotification->count();
 
-                // Final badge for parent
+                // FINAL badge parent
                 $notificationCount = $approvedNotifCount;
 
                 $view->with([
-                    'verifiedList' => $verifiedList,
-                    'verifiedCount' => $verifiedCount,
+                    'verifiedList'   => $verifiedList,
+                    'verifiedCount'  => $verifiedCount,
                     'approvedNotification' => $approvedNotification,
-                    'approvedNotifCount' => $approvedNotifCount,
-                    'notificationCount' => $notificationCount,
+                    'approvedNotifCount'   => $approvedNotifCount,
+                    'notificationCount'    => $notificationCount,
                 ]);
             }
 
-            // SEND TO ALL VIEWS
+            // GLOBAL VALUES
             $view->with([
                 'role' => $role,
                 'pendingCount'   => $pendingCount,
@@ -161,6 +161,8 @@ class AppServiceProvider extends ServiceProvider
                 'requestBillingNotif' => $requestBillingNotif,
                 'requestBillingCount' => $requestBillingCount,
                 'combinedNotif'       => $combinedNotif,
+                'newParentCount'      => $newParentCount,
+                'notificationCount'   => $notificationCount,
             ]);
         });
     }

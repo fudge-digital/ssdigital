@@ -29,6 +29,7 @@
                     <th class="px-4 py-3 text-left">Orang Tua</th>
                     <th class="px-4 py-3 text-left">Anak Terdaftar</th>
                     <th class="px-4 py-3 text-left">Jumlah Pembayaran</th>
+                    <th class="px-4 py-3 text-left">Jenis Pembayaran</th>
                     <th class="px-4 py-3 text-left">Status</th>
                     <th class="px-4 py-3 text-left">Bukti Pembayaran</th>
                     <th class="px-4 py-3 text-center">Aksi</th>
@@ -46,7 +47,11 @@
                             @if($p->details->count() > 0)
                                 <ul class="list-disc list-inside text-xs text-gray-600">
                                     @foreach($p->details as $detail)
-                                        <li>{{ $detail->siswa->name ?? '-' }}</li>
+                                    <li>
+                                        <a href="{{ route('siswa.show', $detail->siswa->id) }}">
+                                            {{ $detail->siswa->name }}
+                                        </a>
+                                    </li>
                                     @endforeach
                                 </ul>
                             @elseif($p->siswa)
@@ -55,7 +60,14 @@
                                 <span class="text-gray-400 italic">Tidak ada data</span>
                             @endif
                         </td>
-                        <td class="px-4 py-3 font-semibold">Rp {{ number_format($p->jumlah_total, 0, ',', '.') }}</td>
+                        <td class="px-4 py-3 font-semibold">
+                            @if(number_format($p->jumlah_total, 0, ',', '.'))
+                                Rp {{ number_format($p->jumlah_total, 0, ',', '.') }}
+                            @else
+                                <p>-</p>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3 capitalize">{{ str_replace('_',' ', $p->jenis) }}</td>
                         <td class="px-4 py-3">
                             <span class="px-3 py-1 rounded-full text-xs font-semibold {{ $p->status_badge_class }}">
                                 {{ $p->status_label }}
@@ -77,18 +89,41 @@
                                 Lihat Bukti Pembayaran
                             </button>
                             @else
-                                <span class="bg-gray-500 text-white text-xs px-3 py-1 rounded-xl">Belum ada</span>
+                                <span class="bg-gray-500 text-white text-xs px-3 py-1 rounded-xl">N/A</span>
                             @endif
                         </td>
                         <td class="px-4 py-3 text-center space-x-2">
                             @if($p->status !== 'verified')
-                                <form action="{{ route('admin.pembayaran.verify', $p->id) }}" method="POST" class="inline-block">
-                                    @csrf
-                                    <button type="submit"
-                                        class="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 rounded-lg">
-                                        Verifikasi
-                                    </button>
-                                </form>
+                                <!-- Button trigger modal -->
+                                <button
+                                    class="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 rounded-lg"
+                                    onclick="openVerifyModal({{ $p->id }})">
+                                    Verifikasi
+                                </button>
+
+                                <!-- Modal -->
+                                <div id="verifyModal-{{ $p->id }}" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                                    <div class="bg-white rounded-xl shadow-lg w-96 p-6">
+                                        <h2 class="text-lg font-semibold mb-4">Konfirmasi Verifikasi</h2>
+                                        <p class="mb-6">Apakah Anda yakin ingin memverifikasi pembayaran ini?</p>
+                                        
+                                        <div class="flex justify-end space-x-3">
+                                            <button
+                                                onclick="closeVerifyModal({{ $p->id }})"
+                                                class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
+                                                Batal
+                                            </button>
+
+                                            <form action="{{ route('admin.pembayaran.verify', $p->id) }}" method="POST">
+                                                @csrf
+                                                <button type="submit"
+                                                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                                                    Lanjutkan
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
                             @endif
 
                             @if($p->status === 'verified')
@@ -151,6 +186,16 @@
         } else {
             content.innerHTML = `<p class="text-gray-500">Format tidak didukung</p>`;
         }
+    }
+</script>
+{{-- JS Modal --}}
+<script>
+    function openVerifyModal(id) {
+        document.getElementById(`verifyModal-${id}`).classList.remove('hidden');
+    }
+
+    function closeVerifyModal(id) {
+        document.getElementById(`verifyModal-${id}`).classList.add('hidden');
     }
 </script>
 @endpush

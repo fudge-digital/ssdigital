@@ -37,6 +37,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/parent/dashboard', [ParentDashboardController::class, 'index'])
         ->middleware('role:orang_tua') // hanya orang tua
         ->name('parent.dashboard');
+    
+    Route::post('/parent/re-registration', [ParentDashboardController::class, 'reRegistration'])
+    ->name('parent.re-registration');
+
+    Route::post('/admin/pembayaran/re-registration-approve/{id}',
+        [PembayaranController::class, 'approveReRegistration'])
+        ->name('admin.re-registration.approve');
 
     // Dashboard Siswa
     Route::get('/siswa/dashboard', [SiswaController::class, 'dashboard'])

@@ -68,10 +68,22 @@
             @endif
 
             {{-- WHATSAPP --}}
-            <a href="https://wa.me/62895606432020?text=Halo admin, saya parent dari {{ $childNames }}. Saya ingin konfirmasi pembayaran iuran bulan {{ \Carbon\Carbon::createFromFormat('Y-m',$latestMonth)->translatedFormat('F Y') }} dengan total Rp {{ number_format($total,0,',','.') }}. Mohon untuk diverifikasi. Terima kasih."
-                target="_blank"
-                class="px-5 py-2 bg-green-600 text-white text-sm rounded-xl hover:bg-green-700 shadow">
-                Kirim WA
+            @php
+                use Carbon\Carbon;
+
+                $formattedMonth = null;
+                if ($latestMonth) {
+                    try {
+                        $formattedMonth = Carbon::createFromFormat('Y-m', $latestMonth)->translatedFormat('F Y');
+                    } catch (\Exception $e) {
+                        $formattedMonth = $latestMonth; // fallback jika format salah
+                    }
+                }
+            @endphp
+            <a href="https://wa.me/62895606432020?text=Halo admin, saya parent dari {{ $childNames }}. Saya ingin konfirmasi pembayaran iuran bulan {{ $formattedMonth }} dengan total Rp {{ number_format($total,0,',','.') }}. Mohon untuk diverifikasi. Terima kasih."
+            target="_blank"
+            class="px-5 py-2 bg-green-600 text-white text-sm rounded-xl hover:bg-green-700 shadow">
+            Kirim WA
             </a>
         </div>
     </div>
