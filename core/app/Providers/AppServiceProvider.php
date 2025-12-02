@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use App\Models\IuranBulanan;
+use App\Models\User;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Auth;
 
@@ -51,12 +52,13 @@ class AppServiceProvider extends ServiceProvider
                 // Pending payment grouping
                 $pending = IuranBulanan::with('siswa.parents.userProfile')
                     ->where('status', 'pending')
+                    ->latest()
                     ->get();
 
                 $pendingGrouped = $pending->groupBy(function ($item) {
                     return $item->siswa->parents->first()->id ?? null;
                 })->map(function ($group) {
-                    $parent = $group->first()->siswa->parents->first();
+                    $parent = $group->first()->siswa->parents->first() ?? null;
                     return [
                         'type' => 'pending',
                         'parent' => $parent,
@@ -68,16 +70,33 @@ class AppServiceProvider extends ServiceProvider
 
                 $pendingCount = $pendingGrouped->count();
 
-                // Request billing notifications
-                $requestBillingNotif = $user->unreadNotifications()
-                    ->where('type', 'App\\Notifications\\IuranRequestNotification')
-                    ->get();
+                // Request billing notifications (Collection filter)
+                $requestBillingNotif = $user->unreadNotifications->filter(function($notif){
+                    return $notif->type === 'App\\Notifications\\IuranRequestNotification';
+                });
 
                 $requestBillingCount = $requestBillingNotif->count();
 
-                // Combine both
+                // ---------------- Parent baru ----------------
+                $newParentsNotif = $user->unreadNotifications->filter(function($notif){
+                    return $notif->type === 'App\\Notifications\\NewParentRegistered';
+                })->map(function($notif){
+                    return [
+                        'type' => 'new_parent',
+                        'parent' => User::find($notif->data['parent_id']),
+                        'created_at' => $notif->created_at,
+                    ];
+                });
+
+                $newParentCount = $newParentsNotif->count();
+
+                // ---------------- Combine all notifications ----------------
+                $combinedNotif = collect();
+
                 foreach ($pendingGrouped as $item) {
-                    $combinedNotif->push($item);
+                    if($item['parent']) {
+                        $combinedNotif->push($item);
+                    }
                 }
 
                 foreach ($requestBillingNotif as $notif) {
@@ -89,6 +108,13 @@ class AppServiceProvider extends ServiceProvider
                     ]);
                 }
 
+                foreach ($newParentsNotif as $np) {
+                    if($np['parent']) {
+                        $combinedNotif->push($np);
+                    }
+                }
+
+                // Sort by latest
                 $combinedNotif = $combinedNotif->sortByDesc('created_at')->values();
             }
 
@@ -107,9 +133,9 @@ class AppServiceProvider extends ServiceProvider
                 $verifiedCount = $verifiedList->count();
 
                 // Notifications for approved billing requests
-                $approvedNotification = $user->unreadNotifications()
-                    ->where('type', 'App\\Notifications\\IuranApprovedNotification')
-                    ->get();
+                $approvedNotification = $user->unreadNotifications->filter(function($notif){
+                    return $notif->type === 'App\\Notifications\\IuranApprovedNotification';
+                });
 
                 $approvedNotifCount = $approvedNotification->count();
 

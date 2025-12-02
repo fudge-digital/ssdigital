@@ -34,6 +34,8 @@
                         <a href="#" class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-3 rounded text-xs ml-2 cursor-not-allowed opacity-50">
                             Detail Siswa
                         </a>
+                    @endif
+                    
                     @if($student->siswaProfile->status !== 'tidak_aktif')
                         <a href="{{ route('siswa.edit', $student->id) }}" class="bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded text-xs ml-2">
                             Edit Data Siswa

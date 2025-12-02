@@ -37,9 +37,9 @@
                         @php $role = Auth::user()->role; @endphp
 
                         {{-- ADMIN BADGE --}}
-                        @if($role === 'admin' && ($pendingCount + $requestBillingCount) > 0)
+                        @if($role === 'admin' && ($pendingCount + $requestBillingCount + ($newParentCount ?? 0)) > 0)
                             <span class="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
-                                {{ $pendingCount + $requestBillingCount }}
+                                {{ $pendingCount + $requestBillingCount + ($newParentCount ?? 0) }}
                             </span>
                         @endif
 
@@ -66,18 +66,20 @@
 
                                 {{-- Pending pembayaran --}}
                                 @if($item['type'] === 'pending')
-                                    <a href="{{ route('admin.iuran.index', ['parent' => $item['parent']->id]) }}"
-                                        class="block px-4 py-3 hover:bg-gray-100 border-b">
-                                        <p class="font-medium">
-                                            {{ $item['parent']->userProfile->nama_lengkap ?? $item['parent']->name }}
-                                        </p>
-                                        <p class="text-sm text-gray-600">
-                                            Pembayaran untuk {{ $item['total_transaksi'] }} siswa pending
-                                        </p>
-                                        <p class="text-sm font-bold text-gray-800">
-                                            Rp {{ number_format($item['total_nominal'], 0, ',', '.') }}
-                                        </p>
-                                    </a>
+                                    @if($item['parent'])
+                                        <a href="{{ route('admin.iuran.index', ['parent' => $item['parent']->id]) }}"
+                                            class="block px-4 py-3 hover:bg-gray-100 border-b">
+                                            <p class="font-medium">
+                                                {{ $item['parent']->userProfile->nama_lengkap ?? $item['parent']->name }}
+                                            </p>
+                                            <p class="text-sm text-gray-600">
+                                                Pembayaran untuk {{ $item['total_transaksi'] }} siswa pending
+                                            </p>
+                                            <p class="text-sm font-bold text-gray-800">
+                                                Rp {{ number_format($item['total_nominal'], 0, ',', '.') }}
+                                            </p>
+                                        </a>
+                                    @endif
 
                                 {{-- Request Billing --}}
                                 @elseif($item['type'] === 'request')
@@ -87,13 +89,27 @@
                                         <p class="text-sm text-gray-600">{{ $item['message'] }}</p>
                                         <p class="text-xs text-gray-400">{{ $item['created_at']->diffForHumans() }}</p>
                                     </a>
+
+                                {{-- New Parent Registered --}}
+                                @elseif($item['type'] === 'new_parent')
+                                    @if($item['parent'])
+                                        <a href="{{ route('admin.iuran.index', $item['parent']->id) }}"
+                                            class="block px-4 py-3 hover:bg-gray-100 border-b">
+                                            <p class="font-medium">
+                                                Parent baru: {{ $item['parent']->userProfile->nama_lengkap ?? $item['parent']->name }}
+                                            </p>
+                                            <p class="text-sm text-gray-600">
+                                                Baru mendaftar, silakan verifikasi
+                                            </p>
+                                            <p class="text-xs text-gray-400">{{ $item['created_at']->diffForHumans() }}</p>
+                                        </a>
+                                    @endif
                                 @endif
 
                             @empty
                                 <p class="px-4 py-3 text-gray-500 text-sm">Tidak ada notifikasi</p>
                             @endforelse
                         @endif
-
 
                         {{-- ================= ORANG TUA ================= --}}
                         @if($role === 'orang_tua')
