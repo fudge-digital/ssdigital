@@ -38,7 +38,7 @@ class GenerateIuranBulanan extends Command
 
             IuranBulanan::firstOrCreate(
                 ['siswa_id' => $siswa->id, 'bulan' => $bulanSekarang],
-                ['jumlah' => 325000, 'status' => 'pending']
+                ['jumlah' => 325000, 'status' => 'unpaid']
             );
         }
 

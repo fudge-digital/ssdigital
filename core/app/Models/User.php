@@ -126,7 +126,15 @@ class User extends Authenticatable
 
     public function handledStudents()
     {
-        return $this->belongsToMany(User::class, 'coach_student_category', 'coach_id', 'student_id');
+        return $this->belongsToMany(User::class, 'coach_student_category', 'coach_id', 'student_id')
+        ->whereHas('profile', function ($q) {
+            $q->whereRaw("
+                CEIL( (YEAR(CURDATE()) - YEAR(tanggal_lahir)) / 2 ) * 2
+                =
+                CAST(REPLACE(coach_student_category.kategori_umur, 'KU ', '') AS UNSIGNED)
+            ");
+        })
+        ->where('status_siswa', 'aktif');
     }
 
     // pembayaran yang dibuat oleh user (sebagai parent)

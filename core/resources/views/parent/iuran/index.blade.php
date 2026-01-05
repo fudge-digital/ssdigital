@@ -12,8 +12,25 @@
     }">
 
     {{-- HEADER --}}
-    <h2 class="text-2xl font-bold text-gray-800 mb-2">Pembayaran Iuran Bulanan</h2>
-    <p class="text-sm mb-8 text-gray-600">(*) Jika total untuk lebih dari 1 anak, cukup upload bukti sekali saja.</p>
+    <div class="flex justify-between">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Pembayaran Iuran Bulanan</h2>
+            <p class="text-sm mb-8 text-gray-600">(*) Jika total untuk lebih dari 1 anak, cukup upload bukti sekali saja.</p>
+        </div>
+        <div>
+            {{-- REQUEST 3 BULAN --}}
+            <button @click="openModalRequest3 = true"
+                    class="px-5 py-2 bg-orange-600 text-white text-sm rounded-xl hover:bg-orange-700 shadow">
+                Request Tagihan 3 Bulan
+            </button>
+
+            {{-- REQUEST 6 BULAN --}}
+            <button @click="openModalRequest6 = true"
+                    class="px-5 py-2 bg-purple-600 text-white text-sm rounded-xl hover:bg-purple-700 shadow">
+                Request Tagihan 6 Bulan
+            </button>
+        </div>
+    </div>
 
     {{-- ALERT --}}
     @if (session('success'))
@@ -47,20 +64,8 @@
         </div>
 
         <div class="flex flex-wrap gap-3">
-            {{-- REQUEST 3 BULAN --}}
-            <button @click="openModalRequest3 = true"
-                    class="px-5 py-2 bg-orange-600 text-white text-sm rounded-xl hover:bg-orange-700 shadow">
-                Request Tagihan 3 Bulan
-            </button>
-
-            {{-- REQUEST 6 BULAN --}}
-            <button @click="openModalRequest6 = true"
-                    class="px-5 py-2 bg-purple-600 text-white text-sm rounded-xl hover:bg-purple-700 shadow">
-                Request Tagihan 6 Bulan
-            </button>
-
             {{-- UPLOAD BUTTON --}}
-            @if($iuran->where('status','unpaid')->count())
+            @if($unpaid->count() > 0)
                 <button @click="openModalUpload = true"
                         class="px-5 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700 shadow">
                     Upload Bukti Pembayaran
@@ -80,11 +85,14 @@
                     }
                 }
             @endphp
+            
+            @if($iuran->where('status', 'pending')->count() > 0)
             <a href="https://wa.me/62895606432020?text=Halo admin, saya parent dari {{ $childNames }}. Saya ingin konfirmasi pembayaran iuran bulan {{ $formattedMonth }} dengan total Rp {{ number_format($total,0,',','.') }}. Mohon untuk diverifikasi. Terima kasih."
             target="_blank"
             class="px-5 py-2 bg-green-600 text-white text-sm rounded-xl hover:bg-green-700 shadow">
-            Kirim WA
+            <i class="fa-brands fa-whatsapp mr-2"></i> Kirim Notifikasi via WA
             </a>
+            @endif
         </div>
     </div>
 
@@ -112,14 +120,14 @@
                 </div>
 
                 <p class="text-sm text-gray-600">
-                    Bulan: <b>{{ \Carbon\Carbon::createFromFormat('Y-m', $item->bulan)->translatedFormat('F Y') }}</b>
+                    Bulan: <b>{{ $item->bulan }}</b>
                 </p>
 
                 <p class="text-sm text-gray-600">
                     Jumlah: <b>Rp {{ number_format($item->jumlah,0,',','.') }}</b>
                 </p>
 
-                @if($item->status === 'paid' && $item->bukti)
+                @if(in_array($item->status, ['paid','pending']) && $item->bukti)
                     <button @click="openModalBukti = true; buktiSrc='{{ Storage::url($item->bukti) }}'; catatan='{{ $item->catatan }}'"
                         class="mt-4 w-full bg-gray-800 text-white p-3 rounded-lg text-sm hover:bg-black">
                         Lihat Bukti Pembayaran
@@ -191,6 +199,7 @@
         class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
 
         <div class="bg-white rounded-2xl w-full max-w-lg p-4 shadow-xl">
+            <h3 class="text-lg font-bold mb-4 text-center uppercase">Bukti & Catatan Pembayaran</h3>
             <img :src="buktiSrc" class="w-full rounded-lg mb-4 object-contain max-h-[70vh]">
             <p class="text-sm font-bold">Catatan Pembayaran:</p>
             <p class="text-sm mb-4" x-text="catatan ? catatan : '-'"></p>
@@ -198,6 +207,47 @@
                 class="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
                 Tutup
             </button>
+        </div>
+    </div>
+
+    {{-- ================= MODAL UPLOAD BUKTI PEMBAYARAN ================= --}}
+    <div x-show="openModalUpload" x-cloak
+        class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+
+        <div class="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
+            <h3 class="text-lg font-bold mb-4">Upload Bukti Pembayaran</h3>
+
+            <form action="{{ route('iuran.uploadTotal') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+
+                {{-- INPUT FILE --}}
+                <label class="text-sm font-semibold">Bukti Pembayaran *</label>
+                <input type="file" name="bukti" accept="image/*"
+                    class="w-full mt-1 border rounded-lg p-2 text-sm" required>
+
+                {{-- TANGGAL BAYAR --}}
+                <label class="text-sm font-semibold mt-4 block">Tanggal Bayar *</label>
+                <input type="date" name="tanggal_bayar"
+                    class="w-full mt-1 border rounded-lg p-2 text-sm" required>
+
+                {{-- CATATAN --}}
+                <label class="text-sm font-semibold mt-4 block">Catatan (Opsional)</label>
+                <textarea name="catatan" rows="3"
+                        class="w-full mt-1 border rounded-lg p-2 text-sm"
+                        placeholder="Tambahkan catatan jika perlu..."></textarea>
+
+                <div class="flex justify-end gap-2 mt-5">
+                    <button type="button" @click="openModalUpload=false"
+                        class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
+                        Batal
+                    </button>
+
+                    <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        Upload
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 

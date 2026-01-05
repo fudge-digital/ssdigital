@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\User;
+use App\Models\PembayaranSiswa;
+use App\Notifications\PendingRegistrationNotification;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\Parents\ParentDashboardController;
@@ -16,6 +18,7 @@ use App\Http\Controllers\StudentDocumentController;
 use App\Http\Controllers\IuranBulananController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 use App\Mail\ParentRegistrationMail;
 use Illuminate\Support\Str;
 use App\Helpers\StudentHelper;
@@ -40,10 +43,11 @@ Route::middleware('auth')->group(function () {
     
     Route::post('/parent/re-registration', [ParentDashboardController::class, 'reRegistration'])
     ->name('parent.re-registration');
-
     Route::post('/admin/pembayaran/re-registration-approve/{id}',
         [PembayaranController::class, 'approveReRegistration'])
         ->name('admin.re-registration.approve');
+    Route::post('/parent/set-reg-type', [ParentDashboardController::class, 'setRegType'])
+    ->name('parent.set-reg-type');
 
     // Dashboard Siswa
     Route::get('/siswa/dashboard', [SiswaController::class, 'dashboard'])
@@ -67,14 +71,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/parent/iuran', [IuranBulananController::class, 'index'])->name('parent.iuran.index');
 
     // Route::post('/iuran/{iuran}/upload-bukti', [IuranBulananController::class, 'uploadBukti'])
-    //     ->name('iuran.upload');
+    // ->name('iuran.upload');
 
     // Request tagihan
     Route::get('/iuran/request', [IuranBulananController::class, 'requestForm'])->name('iuran.request.form');
     Route::post('/iuran/request', [IuranBulananController::class, 'submitRequest'])->name('iuran.request');
 
     //UploadBukti
-    Route::post('/iuran/{iuran}/upload-bukti', [IuranBulananController::class, 'uploadBuktiTotal'])
+    Route::post('/iuran/upload-bukti', [IuranBulananController::class, 'uploadBuktiTotal'])
         ->name('iuran.uploadTotal');
 
     Route::post('/iuran/{iuran}/verify', [IuranBulananController::class, 'verify'])
@@ -116,7 +120,7 @@ Route::middleware(['auth', 'role:admin,super_admin'])->prefix('admin')->group(fu
     Route::post('/iuran/generate', [AdminIuranController::class, 'generate'])->name('admin.iuran.generate');
     Route::get('/iuran/verifikasi', [AdminIuranController::class, 'verifikasi'])->name('admin.iuran.verifikasi');
     Route::post('/iuran/{id}/approve', [AdminIuranController::class, 'approve'])->name('admin.iuran.approve');
-    Route::post('/admin/iuran/bulk-verify',[AdminIuranController::class,'bulkVerify'])
+    Route::post('/iuran/bulk-verify',[AdminIuranController::class,'bulkVerify'])
     ->name('admin.iuran.bulkVerify');
     //Bulk Month Iuran
     Route::get('/iuran/requests', [AdminIuranController::class, 'requests'])->name('admin.iuran.requests');
@@ -140,5 +144,12 @@ Route::get('/post/{slug}', [PostController::class, 'show'])->name('posts.show');
 Route::get('/berita', [PostController::class, 'public'])->name('posts.public');
 
 
-
 require __DIR__.'/auth.php';
+
+// Mark parent notifications as read
+Route::get('/parent/notifications/read', function () {
+    if(auth()->check()){
+        auth()->user()->unreadNotifications->markAsRead();
+    }
+    return response()->json(['ok' => true]);
+})->name('parent.notif.read');

@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\SiswaProfile;
+use App\Helpers\StudentHelper;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class SiswaProfile extends Model
 {
@@ -30,6 +32,11 @@ class SiswaProfile extends Model
             'Perempuan' => 'Putri',
             default => '-',
         };
+    }
+
+    public function getKelompokUmurAttribute()
+    {
+        return StudentHelper::kelompokUmur($this->tanggal_lahir);
     }
 
     public function user()

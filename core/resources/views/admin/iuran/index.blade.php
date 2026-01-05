@@ -33,7 +33,7 @@
             </div>
 
             <div class="flex justify-start mb-4">
-                <button type="button" id="btnBulkVerify"
+                <button type="submit" id="btnBulkVerify"
                         class="px-2 py-1 bg-green-600 text-sm text-white rounded disabled:opacity-50"
                         @click="modalType='bulk'; modalOpen=true; actionUrl='{{ route('admin.iuran.bulkVerify') }}'"
                         disabled>

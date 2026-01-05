@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\PembayaranSiswa;
 use App\Models\SiswaProfile;
 use App\Helpers\StudentHelper;
+use App\Notifications\ParentVerificationApprovedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 
 class PembayaranController extends Controller
 {
@@ -58,12 +60,18 @@ class PembayaranController extends Controller
             }
         }
 
+        $pembayaran->load('details.siswa.siswaProfile','user.userProfile');
+        $parent = $pembayaran->user;
+        if($parent){
+            $parent->notify(new \App\Notifications\ParentReRegistrationApprovedNotification($pembayaran));
+        }
+
         return back()->with('success', 'Pembayaran diverifikasi dan seluruh siswa berhasil diaktifkan.');
     }
 
     public function approveReRegistration($id)
     {
-        $pembayaran = PembayaranSiswa::findOrFail($id);
+        $pembayaran = PembayaranSiswa::with(['user.userProfile','details.siswa.siswaProfile'])->findOrFail($id);
 
         // Update pembayaran
         $pembayaran->update([
@@ -82,6 +90,12 @@ class PembayaranController extends Controller
             'status' => 'aktif',
             'updated_at' => now()
         ]);
+
+        $pembayaran->load('details.siswa.siswaProfile','user.userProfile');
+        $parent = $pembayaran->user;
+        if($parent){
+            $parent->notify(new \App\Notifications\ParentReRegistrationApprovedNotification($pembayaran));
+        }
 
         return back()->with('success', 'Registrasi ulang berhasil diverifikasi, semua siswa telah diaktifkan.');
     }

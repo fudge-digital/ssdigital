@@ -18,23 +18,47 @@ class IuranBulananController extends Controller
     {
         $parent = Auth::user();
         $students = $parent->children;
-        $siswaIds = $parent->children->pluck('id'); // untuk parent view siswa langsung
+        $siswaIds = $students->pluck('id'); // untuk parent view siswa langsung
 
         $iuran = IuranBulanan::with('siswa')
             ->whereIn('siswa_id', $siswaIds)
             ->orderByDesc('bulan')
             ->paginate(12);
-        
-        // total per bulan aktif (misal bulan terbaru)
+
+        // Ambil bulan terbaru
         $latestMonth = IuranBulanan::whereIn('siswa_id', $siswaIds)->max('bulan');
+
+        // Ambil semua iuran bulan terbaru
         $currentIuran = IuranBulanan::whereIn('siswa_id', $siswaIds)
-        ->where('bulan', $latestMonth)
-        ->get();
+            ->where('bulan', $latestMonth)
+            ->get();
 
-        $total = $currentIuran->sum('jumlah');  
-        $childNames = $students->pluck('nama')->implode(', ');
+        // Semua unpaid bulan terbaru (menggunakan status 'unpaid' sesuai diskusi)
+        $unpaid = $currentIuran->where('status', 'unpaid');
+        $paid = $currentIuran->where('status', 'paid');
+        $pending = $currentIuran->where('status', 'pending');
 
-        return view('parent.iuran.index', compact('iuran', 'childNames', 'latestMonth'));
+        // Hitung total dari unpaid saja
+        $total = $unpaid->sum('jumlah');
+
+        // child names sebagai collection untuk foreach di blade
+        // Pastikan nama kolom di model siswa: 'name' atau 'nama' — sesuaikan jika beda
+        $childNames = $students->pluck('name'); // <-- collection
+
+        // juga sediakan versi string untuk WhatsApp
+        $childNamesString = $childNames->implode(', ');
+
+        return view('parent.iuran.index', compact(
+            'iuran',
+            'childNames',        // collection untuk foreach
+            'childNamesString',  // string untuk WA atau teks
+            'latestMonth',
+            'total',
+            'unpaid',
+            'paid',
+            'pending',
+            'currentIuran'
+        ));
     }
 
     public function uploadBukti(Request $request, IuranBulanan $iuran)
@@ -102,32 +126,50 @@ class IuranBulananController extends Controller
 
         $parent = Auth::user();
         $siswaIds = $parent->children->pluck('id');
-        $latestMonth = request('bulan');
+        $latestMonth = IuranBulanan::whereIn('siswa_id', $siswaIds)->max('bulan');
 
         // Ambil semua iuran bulan terkait
         $iurans = IuranBulanan::whereIn('siswa_id', $siswaIds)
             ->where('bulan', $latestMonth)
             ->where('status', 'unpaid')
             ->get();
+        
+        if ($iurans->isEmpty()) {
+            return back()->with('error', 'Tidak ada tagihan unpaid pada bulan ini.');
+        }
 
         $bulan = $iurans->first()->bulan;
 
-        // filename
         $file = $request->file('bukti');
         $filename = 'iuran_' . $bulan . '.' . $file->getClientOriginalExtension();
 
-        // storage logic multi environment
         $useDirectPublicStorage = env('USE_DIRECT_PUBLIC_STORAGE', false);
 
-        if (!$useDirectPublicStorage && file_exists(public_path('storage'))) {
-            // Local
+        // ===== LOCAL MODE (XAMPP, Windows) =====
+        if (!$useDirectPublicStorage) {
+            // Simpan ke storage/app/public/bukti_iuran
             $path = $file->storeAs('bukti_iuran', $filename, 'public');
-        } else {
-            // Server
-            $destination = public_path('storage/bukti_iuran');
-            if (!file_exists($destination)) mkdir($destination, 0755, true);
+        } 
 
+        // ===== SERVER MODE (Shared Hosting) =====
+        else {
+            $basePath = public_path('storage');
+            $destination = public_path('storage/bukti_iuran');
+
+            // Buat folder public/storage jika belum ada
+            if (!is_dir($basePath)) {
+                mkdir($basePath, 0755, true);
+            }
+
+            // Buat folder public/storage/bukti_iuran
+            if (!is_dir($destination)) {
+                mkdir($destination, 0755, true);
+            }
+
+            // Move file
             $file->move($destination, $filename);
+
+            // Save path relative untuk DB
             $path = 'storage/bukti_iuran/' . $filename;
         }
 
@@ -143,6 +185,8 @@ class IuranBulananController extends Controller
 
         // === NOTIFIKASI UNTUK ADMIN ===
         $admins = User::where('role', 'admin')->get();
+        $totalNotifikasi = $iurans->sum('jumlah');
+
         foreach ($admins as $admin) {
             $admin->notify(new IuranPendingNotification([
                 'parent_name' => Auth::user()->name,
@@ -205,27 +249,48 @@ class IuranBulananController extends Controller
         ]);
 
         $parent = auth()->user();
-        $studentCount = $parent->children->count(); // support banyak anak
+        $students = $parent->children;
+
+        if ($students->isEmpty()) {
+            return back()->with('error', 'Anda tidak memiliki siswa.');
+        }
+
         $months = $request->months;
 
-        // Tentukan harga per siswa per bulan
+        // Tentukan bulan berjalan
+        $currentMonth = now()->format('Y-m');
+
+        // Cek apakah bulan berjalan masih unpaid untuk salah satu anak
+        $hasUnpaidCurrentMonth = IuranBulanan::whereIn('siswa_id', $students->pluck('id'))
+            ->where('bulan', $currentMonth)
+            ->where('status', 'unpaid')
+            ->exists();
+
+        // Jika masih unpaid → mulai dari bulan ini, jika sudah paid → mulai bulan depan
+        $startMonth = $hasUnpaidCurrentMonth
+            ? $currentMonth
+            : now()->addMonth()->format('Y-m');
+
+        // Harga sesuai aturan baru
+        $promoPrices = config('promo.prices');
         $pricePerStudent = ($months == 3) ? 325000 : 300000;
 
-        // Hitung total tagihan
+        $studentCount = $students->count();
         $totalTagihan = $studentCount * $pricePerStudent * $months;
 
-        $iuranRequest = IuranRequest::create([
-            'parent_id' => $parent->id,
-            'months' => $months,
+        // SIMPAN REQUEST
+        $req = IuranRequest::create([
+            'parent_id'     => $parent->id,
+            'months'        => $months,
             'student_count' => $studentCount,
             'total_tagihan' => $totalTagihan,
-            'status' => 'pending'
+            'month'         => $startMonth, // ← PENTING
+            'status'        => 'pending',
         ]);
 
-        // Notifikasi ke admin
-        $admins = User::where('role', 'admin')->get();
-        foreach ($admins as $admin) {
-            $admin->notify(new IuranRequestNotification('request_created', $iuranRequest));
+        // NOTIFIKASI KE ADMIN
+        foreach (User::where('role', 'admin')->get() as $admin) {
+            $admin->notify(new IuranRequestNotification('request_created', $req));
         }
 
         return back()->with('success', 'Request berhasil dikirim dan menunggu persetujuan admin.');

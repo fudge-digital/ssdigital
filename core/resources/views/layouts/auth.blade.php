@@ -14,6 +14,11 @@
     {{-- Kolom kiri --}}
     <div class="hidden md:flex w-1/2 bg-green-800 text-white flex-col justify-between items-center py-10 px-6 relative">
         
+        <div 
+            class="absolute inset-0 bg-cover bg-center opacity-10 -z-10"
+            style="background-image: url('{{ asset('images/contour.png') }}');">
+        </div>
+
         {{-- Logo di atas --}}
         <div class="invisible w-full flex justify-center">
             <img src="{{ asset('images/SATRIASILIWANGIFONT-1.png') }}" 
