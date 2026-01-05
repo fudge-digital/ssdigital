@@ -9,6 +9,10 @@ class IuranRequest extends Model
 {
     protected $fillable = ['parent_id', 'months', 'status', 'student_count', 'total_tagihan'];
 
+    protected $casts = [
+        'month_list' => 'array',
+    ];
+
     public function getMonthListAttribute()
     {
         $start = now()->startOfMonth()->addMonth();

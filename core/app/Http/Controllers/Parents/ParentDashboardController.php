@@ -7,12 +7,13 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Notification;
 use App\Http\Controllers\Controller;
 use App\Models\PembayaranSiswa;
 use App\Models\Post;
 use App\Models\User;
 use App\Services\ParentFinanceSummaryService;
-use App\Notifications\PendingRegistrationNotification;
+use App\Notifications\ParentVerificationApprovedNotification;
 
 class ParentDashboardController extends Controller
 {
@@ -31,20 +32,14 @@ class ParentDashboardController extends Controller
 
         // Hitung total pembayaran pendaftaran
         $biayaPerSiswa = 650000;
-        $jumlahSiswa = count($nonActiveStudents);
+        $jumlahSiswa = $nonActiveStudents->count();
         $totalPendaftaran = $jumlahSiswa * $biayaPerSiswa;
-
-        // Cek apakah pernah register offline
-        $hasOfflineRegistration = PembayaranSiswa::where('user_id', $parent->id)
-            ->where('jenis', 'offline')
-            ->exists();
-
-        $isReRegistration = $hasOfflineRegistration;
 
         // Cek pembayaran online
         $pembayaran = PembayaranSiswa::where('user_id', $parent->id)
-            ->where('jenis', 'pendaftaran')
-            ->whereIn('status', ['pending', 'approve'])
+            ->whereIn('status', ['pending', 'approve', 'reject'])
+            ->whereIn('jenis', ['Daftar_Ulang', 'Pendaftaran_Baru', 'Pembayaran_RAB', 'Pembayaran_Jersey'])
+            ->latest()
             ->first();
 
         $jadwalLatihan = Post::with('category')
@@ -55,6 +50,12 @@ class ParentDashboardController extends Controller
             ->whereYear('published_at', now()->year)
             ->orderBy('published_at', 'desc')
             ->first();
+        
+        // Notifikasi verifikasi pembayaran (jenis pendaftaran / iuran)
+        $approvedNotification = $parent->notifications()
+            ->where('type', 'App\Notifications\ParentVerificationApprovedNotification')
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         return view('parent.dashboard', [
             'parent'            => $parent,
@@ -62,8 +63,9 @@ class ParentDashboardController extends Controller
             'nonActiveStudents' => $nonActiveStudents,
             'totalPendaftaran'  => $totalPendaftaran,
             'pembayaran'        => $pembayaran,
-            'isReRegistration'  => $isReRegistration,
             'jadwalLatihan'     => $jadwalLatihan,
+            'approvedNotification' => $approvedNotification,
+            'notificationCount' => $approvedNotification->count(),
         ]);
     }
 
@@ -72,6 +74,7 @@ class ParentDashboardController extends Controller
         $request->validate([
             'bukti_pembayaran' => 'required|image|max:4096', // 4MB limit
             'jumlah' => 'nullable|numeric|min:0',
+            'regType' => 'required|in:Daftar_Ulang,Pendaftaran_Baru',
             'siswa_ids' => 'nullable|string',
         ]);
 
@@ -113,14 +116,14 @@ class ParentDashboardController extends Controller
         // Simpan Pembayaran
         $pembayaran = PembayaranSiswa::create([
             'user_id' => $orangTua->id,
-            'jenis' => 'Pendaftaran_Baru',
+            'jenis' => $request->regType,
             'jumlah_total' => $totalPendaftaran,
             'status' => 'pending',
             'bukti_pembayaran' => $path,
         ]);
 
         $admins = User::where('role', 'admin')->get();
-        Notification::send($admins, new PendingRegistrationNotification($pembayaran));
+        Notification::send($admins, new PendingReRegistrationNotification($pembayaran));
 
         // Simpan relasi ke masing-masing siswa (jika nanti perlu tracking per anak)
         foreach ($validSiswa as $siswa) {
@@ -141,16 +144,21 @@ class ParentDashboardController extends Controller
      */
     public function reRegistration(Request $request)
     {
+        $request->validate([
+            'siswa_ids' => 'required|string',
+            'regType' => 'required|in:Daftar_Ulang,Pendaftaran_Baru',
+        ]);
+
         $parent = Auth::user();
         $siswaIds = explode(',', $request->siswa_ids);
 
         // Hitung total (0 untuk re-registration)
-        $total = 0;
+        $total = $request->regType === 'Daftar_Ulang' ? 0 : 650000 * count($siswaIds);
 
         // Buat header pembayaran
         $pembayaran = PembayaranSiswa::create([
             'user_id' => $parent->id,
-            'jenis' => 'Daftar_Ulang',
+            'jenis' => $request->regType,
             'jumlah_total' => $total,
             'status' => 'pending',
         ]);
@@ -160,15 +168,17 @@ class ParentDashboardController extends Controller
             DB::table('pembayaran_siswa_detail')->insert([
                 'pembayaran_id' => $pembayaran->id,
                 'siswa_id' => $siswaId,
-                'jumlah' => 0,
+                'jumlah' =>$request->regType === 'Daftar_Ulang' ? 0 : 650000,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
         }
 
         $admins = User::where('role', 'admin')->get();
-        Notification::send($admins, new PendingRegistrationNotification($pembayaran));
+        Notification::send($admins, new PendingReRegistrationNotification($pembayaran));
 
         return back()->with('success', 'Registrasi ulang berhasil dikirim ke admin untuk verifikasi.');
     }
+
+    
 }

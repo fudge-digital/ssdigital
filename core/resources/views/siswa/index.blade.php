@@ -23,6 +23,7 @@
                     <th class="p-3">Foto</th>
                     <th class="p-3">NISS</th>
                     <th class="p-3">Nama</th>
+                    <th class="p-3">Ttl & Usia</th>
                     <th class="p-3">Kategori</th>
                     <th class="p-3">No Jersey</th>
                     <th class="p-3">No WA</th>
@@ -41,6 +42,9 @@
 
                     <td class="p-3 font-medium">{{ $item->siswaProfile?->niss ?? '-' }}</td>
                     <td class="p-3 font-medium">{{ $item->name }}</td>
+                    <td class="p-3">
+                        <span class="font-medium">{{ $item->siswaProfile?->tanggal_lahir ?? '-' }}</span><br>
+                        <small>{{ $item->siswaProfile?->usia ?? '-' }} tahun</small></td>
                     <td class="p-3">
                         <div class="px-2 py-1 rounded w-24 text-center text-xs {{ $item->siswaProfile->jenis_kelamin_label === 'Putra' ? 'bg-blue-600 font-medium text-white' : 'bg-pink-300 text-white font-medium' }}">
                             <span class="font-medium">{{ $item->siswaProfile?->kelompok_umur ?? '-' }}</span>

@@ -4,6 +4,7 @@
 
 @section('content')
 <div class="max-w-md mx-auto bg-white rounded-2xl shadow p-6">
+    
     <h1 class="text-xl font-semibold mb-4 text-center">Login ke Sistem</h1>
 
     <form method="POST" action="{{ route('login') }}">

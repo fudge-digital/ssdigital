@@ -30,7 +30,7 @@ class PendingRegistrationNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['databse', 'mail'];
+        return ['database', 'mail'];
     }
 
     /**
@@ -38,10 +38,26 @@ class PendingRegistrationNotification extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
-            ->line('The introduction to the notification.')
-            ->action('Notification Action', url('/'))
-            ->line('Thank you for using our application!');
+        $mail = (new MailMessage)
+            ->subject('Pengajuan Verifikasi Registrasi')
+            ->view('emails.pending_registration', [
+                'pembayaran' => $this->pembayaran
+            ]);
+
+        // Jika jenis pendaftaran_baru, lampirkan bukti pembayaran
+        if ($this->pembayaran->jenis === 'pendaftaran_baru' && $this->pembayaran->bukti_pembayaran) {
+
+            $filePath = storage_path('app/public/' . $this->pembayaran->bukti_pembayaran);
+
+            if (file_exists($filePath)) {
+                $mail->attach($filePath, [
+                    'as' => 'bukti_pembayaran.jpg',
+                    'mime' => 'image/jpeg',
+                ]);
+            }
+        }
+
+        return $mail;
     }
 
     public function toDatabase($notifiable)

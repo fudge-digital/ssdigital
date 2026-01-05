@@ -13,18 +13,20 @@ class StudentHelper
 
     public static function kelompokUmur($tanggal_lahir)
     {
-        $tahunSekarang = now()->year;
         $tahunLahir = Carbon::parse($tanggal_lahir)->year;
+        $tahunSekarang = now()->year;
+
         $usia = $tahunSekarang - $tahunLahir;
 
-        if ($usia < 8) return 'KU Below 8';
-        if ($usia <= 9) return 'KU 10';
-        if ($usia <= 12) return 'KU 12';
-        if ($usia <= 14) return 'KU 14';
-        if ($usia <= 16) return 'KU 16';
-        if ($usia <= 18) return 'KU 18';
-        if ($usia <= 24) return 'KU Pra Divisi';
-        if ($usia <= 35) return 'KU Divisi';
+        $ku = (int) (ceil($usia / 2) * 2);
+
+        if ($ku < 8) return 'KU Below 8';
+        if ($ku <= 10) return 'KU 10';
+        if ($ku <= 12) return 'KU 12';
+        if ($ku <= 14) return 'KU 14';
+        if ($ku <= 16) return 'KU 16';
+        if ($ku <= 18) return 'KU 18';
+        if ($ku <= 35) return 'KU Divisi';
         return 'KU Veteran';
     }
 

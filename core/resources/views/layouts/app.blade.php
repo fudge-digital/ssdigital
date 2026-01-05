@@ -96,7 +96,7 @@
 
                                 {{-- Parent Baru --}}
                                 @if($item['type'] === 'new_parent')
-                                    <a href="{{ route('admin.iuran.index', $item['parent']->id) }}"
+                                    <a href="{{ route('admin.pembayaran.index') }}"
                                     class="block px-4 py-3 hover:bg-gray-100 border-b">
                                         <p class="font-medium">
                                             Parent Baru: {{ $item['parent']->userProfile->nama_lengkap ?? $item['parent']->name }}
@@ -171,5 +171,18 @@
         });
     </script>
     
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    var btn = document.getElementById('notificationButton');
+    if(btn){
+        btn.addEventListener('click', function(){
+            fetch("{{ route('parent.notif.read') }}", { credentials: 'same-origin' })
+            .catch(function(err){ console.log('Notif read error', err); });
+        });
+    }
+});
+</script>
+
 </body>
 </html>

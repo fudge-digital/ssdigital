@@ -5,7 +5,7 @@ return [
         'none'     => 325000,
         'sibling'  => 300000,
         'sponsor'  => 300000,       // contoh promo lain
-        'beasiswa' => 0,
+        'beasiswa' => 300000,
     ],
 
     // label / warna untuk UI

@@ -98,7 +98,7 @@
             </div>
             
             {{-- ================= PILIHAN REGISTRASI (HIDE JIKA SUDAH KIRIM / PENDING / VERIFIED) ================= --}}
-            @if($nonActiveStudents->count() > 0 && (!$pembayaran || $pembayaran->status === 'pending'))
+            @if($nonActiveStudents->count() > 0 && !$pembayaran)
                 <div class="bg-white border border-gray-200 rounded-2xl p-6 text-gray-900 mb-6">
                     <p class="font-semibold mb-3">Silakan pilih jenis pendaftaran:</p>
 
@@ -120,6 +120,13 @@
                             Lanjutkan
                         </button>
                     </form>
+
+                    <div class="mt-4">
+                        <ul class="text-xs list-disc">
+                            <li>Daftar Ulang: Daftar ulang adalah untuk orang tua dan siswa yang sudah terdaftar sebagai anggota Satria Siliwangi Basketball dan ini wajib untuk pemuktahiran data Satria Siliwangi Basketball.</li>
+                            <li>Pendaftaran Baru: Pendaftaran Baru adalah untuk orang tua dan siswa yang belum pernah terdaftar sebagai siswa Satria Siliwangi Basketball.</li>
+                        </ul>
+                    </div>
                 </div>
             @endif
 
@@ -127,25 +134,31 @@
             @if(request('regType') === 'Daftar_Ulang')
                 <div class="bg-blue-100 border border-blue-200 text-sm rounded-2xl p-6 text-blue-900">
                     <p class="mb-3">
-                        Anda memilih <strong>Registrasi Ulang</strong>. Tidak perlu melakukan pembayaran lagi.
+                        Anda telah melakukan <strong>Registrasi Ulang</strong>.
                     </p>
                     <p class="mb-3">
-                        Pendaftaran ulang akan langsung dikirim ke admin untuk diverifikasi agar siswa bisa diaktifkan.
+                        Pendaftaran ulang akan sudah dikirim ke admin untuk diverifikasi agar siswa bisa diaktifkan.
                     </p>
 
-                    @if($pembayaran && $pembayaran->status === 'pending')
+                    @if(!$pembayaran)
+                        {{-- Tampilkan tombol kirim registrasi ulang --}}
                         <form action="{{ route('parent.re-registration') }}" method="POST">
                             @csrf
+                            <input type="hidden" name="regType" value="{{ request('regType') }}">
                             <input type="hidden" name="siswa_ids" value="{{ $nonActiveStudents->pluck('id')->join(',') }}">
                             <button type="submit"
                                 class="bg-blue-700 hover:bg-blue-800 text-white font-semibold py-2 px-6 rounded-lg">
                                 Kirim Registrasi Ulang ke Admin
                             </button>
                         </form>
-                    @else
+                    @elseif($pembayaran->status === 'pending')
                         <div class="p-3 bg-green-200 text-green-800 rounded mb-4">
                             Registrasi ulang sudah dikirim ke admin. Mohon menunggu proses verifikasi 1x24 Jam.
                         </div>
+
+                        <p class="mb-4">
+                            Jika menurut anda proses verifikasi terlalu lama dan sudah lebih dari 1x24 jam, kemungkinan admin sedang sibuk. Silahkan kirim notifikasi Registrasi ulang melalui whatsapp di bawah ini. 
+                        </p>
 
                         @php
                             $message = "Halo Admin, ada pengajuan *Registrasi Ulang* dari Orang Tua: *$parent->name*"
@@ -157,60 +170,70 @@
                             class="inline-flex items-center gap-2 px-5 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg">
                             <i class="fa-brands fa-whatsapp text-lg"></i> WhatsApp Admin
                         </a>
+                    @elseif($pembayaran->status === 'verified')
+                        <div class="p-3 bg-green-200 text-green-800 rounded mb-4">
+                            Registrasi ulang telah diverifikasi. Siswa siap diaktifkan.
+                        </div>
                     @endif
                 </div>
 
             {{-- ================= NEW REGISTRATION ================= --}}
             @elseif(request('regType') === 'Pendaftaran_Baru')
                 @if(!$pembayaran)
-                    <div class="bg-gray-100 border border-gray-200 text-sm rounded-2xl p-6 text-gray-900">
+                    <div class="bg-gray-100 border border-gray-200 text-sm rounded-2xl p-6 text-gray-900 mb-4">
                         Silakan lakukan pembayaran sejumlah yang tertera dibawah ke
                         <p class="py-2">
                             <strong>BCA a/n Satria Siliwangi<br>
                             No. Rek. 7773075176</strong>
                         </p>
                         dan unggah bukti pembayaran pendaftaran untuk melanjutkan proses aktivasi akun siswa.
+
+                        @if(session('success'))
+                            <div class="p-3 bg-green-200 text-green-800 rounded mb-2">
+                                Bukti pembayaran berhasil dikirim. Mohon menunggu verifikasi admin.
+                            </div>
+                        @endif
+
+                        @if($errors->any())
+                            <div class="p-3 bg-red-200 text-red-800 rounded mb-2">
+                                {{ $errors->first() }}
+                            </div>
+                        @endif
+
+                        {{-- Form Upload Bukti Pembayaran --}}
+                        <form action="{{ route('parent.upload-pembayaran') }}" method="POST"
+                            enctype="multipart/form-data" class="mt-4">
+                            @csrf
+                            <input type="hidden" name="regType" value="{{ request('regType') }}">
+                            <input type="hidden" name="siswa_ids" value="{{ $nonActiveStudents->pluck('id')->join(',') }}">
+
+                            <div class="mb-4">
+                                <label class="block mb-1 font-medium">Jumlah yang harus dibayar</label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 font-bold">Rp.</span>
+                                    <input type="text"
+                                        name="totalPendaftaran"
+                                        value="{{ number_format($totalPendaftaran, 0, ',', '.') }}"
+                                        readonly
+                                        class="border border-gray-300 bg-gray-300 rounded-lg p-2 w-full text-sm text-gray-500 font-bold pl-10 pr-3"
+                                        inputmode="numeric"
+                                        autocomplete="off">
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="block mb-1 font-medium">Upload Bukti Pembayaran</label>
+                                <input type="file" name="bukti_pembayaran" accept="image/*" required
+                                    class="border border-gray-300 bg-white rounded-lg p-2 w-full text-sm">
+                            </div>
+
+                            <button type="submit"
+                                    class="bg-green-700 hover:bg-green-800 text-white font-semibold py-2 px-6 rounded-lg">
+                                Verifikasi Pembayaran
+                            </button>
+                        </form>
                     </div>
-
-                    @if(session('success'))
-                        <div class="p-3 bg-green-200 text-green-800 rounded mb-2">
-                            Bukti pembayaran berhasil dikirim. Mohon menunggu verifikasi admin.
-                        </div>
-                    @endif
-
-                    @if($errors->any())
-                        <div class="p-3 bg-red-200 text-red-800 rounded mb-2">
-                            {{ $errors->first() }}
-                        </div>
-                    @endif
-
-                    <form action="{{ route('parent.upload-pembayaran') }}" method="POST"
-                        enctype="multipart/form-data" class="mt-4">
-                        @csrf
-                        <input type="hidden" name="siswa_ids" value="{{ $nonActiveStudents->pluck('id')->join(',') }}">
-
-                        <div class="relative mb-3">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 font-bold">Rp</span>
-                            <input type="text"
-                                name="totalPendaftaran"
-                                value="{{ number_format($totalPendaftaran, 0, ',', '.') }}" readonly
-                                class="border border-gray-300 bg-gray-300 rounded-lg p-2 w-full text-sm text-gray-500 font-bold pl-10 pr-3"
-                                inputmode="numeric"
-                                autocomplete="off">
-                        </div>
-
-                        <label>Upload Bukti Pembayaran</label>
-                        <input type="file" name="bukti_pembayaran" accept="image/*" required
-                            class="border border-gray-300 bg-white rounded-lg p-2 w-full mb-4">
-
-                        <button type="submit"
-                                class="bg-green-700 hover:bg-green-800 text-white font-semibold py-2 px-6 rounded-lg">
-                            Verifikasi Pembayaran
-                        </button>
-                    </form>
-
-                {{-- WAITING VERIFICATION --}}
-                @elseif($pembayaran && $pembayaran->status === 'pending')
+                @elseif($pembayaran->status === 'pending')
                     @php
                         $message = "Halo, Saya ingin konfirmasi pembayaran pendaftaran siswa Satria Siliwangi Basketball atas nama *$parent->name*";
                         $message .= "\n\nDengan detail sebagai berikut:";
@@ -231,7 +254,8 @@
                             <i class="fa-brands fa-whatsapp text-lg"></i> WhatsApp Admin
                         </a>
                     </div>
-                @elseif($pembayaran && $pembayaran->status === 'verified')
+
+                @elseif($pembayaran->status === 'verified')
                     <div class="bg-green-100 border border-green-200 rounded-2xl p-6 text-green-900 mb-6">
                         <p class="font-semibold mb-2">Pembayaran Terverifikasi</p>
                         <p>Pembayaran / registrasi sudah diverifikasi oleh admin. Siswa siap diaktifkan.</p>

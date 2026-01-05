@@ -37,13 +37,18 @@
                         </td>
 
                         <td class="px-4 py-2">
-                            <strong>{{ $req->months }} Bulan</strong>
-                            <ul class="text-xs px-2 list-disc">
-                                @foreach($req->month_list as $month)
-                                    <li>{{ $month }}</li>
-                                @endforeach
-                            </ul>
-                        </td>
+    <strong>{{ $req->months }} Bulan</strong>
+
+    @if(is_array($req->month_list))
+        <ul class="text-xs px-2 list-disc">
+            @foreach($req->month_list as $month)
+                <li>{{ $month }}</li>
+            @endforeach
+        </ul>
+    @else
+        <p class="text-xs text-red-600">Bulan tidak valid</p>
+    @endif
+</td>
 
                         <td class="px-4 py-2">
                             Rp {{ number_format($req->total_tagihan, 0, ',', '.') }}
@@ -94,7 +99,7 @@
             <!-- AJAX fill -->
         </div>
 
-        <form id="approve-form" method="POST" action="{{ route('admin.iuran.approve', $req->id) }}">
+        <form id="approve-form" method="POST">
             @csrf
             <button type="submit"
                 class="mt-4 w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg">
@@ -127,6 +132,8 @@ function openDetail(id) {
 
             document.getElementById('approve-form').action = `/admin/iuran/approve/${id}`;
             document.getElementById('requestModal').classList.remove('hidden');
+
+            console.log("Approve action:", `/admin/iuran/approve/${id}`);
         });
 }
 

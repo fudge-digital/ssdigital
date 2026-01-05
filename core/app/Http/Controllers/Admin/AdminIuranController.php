@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use App\Notifications\IuranPendingNotification;
+use Illuminate\Support\Facades\Log;
 
 class AdminIuranController extends Controller
 {
@@ -34,14 +35,17 @@ class AdminIuranController extends Controller
         
         // Parent pending untuk modal Generate Bulk
         $pendingParents = User::where('role', 'orang_tua')
-        ->whereHas('iuranRequests', fn($q) => $q->where('status', 'pending'))
-        ->get();
+            ->whereHas('iuranRequests', fn($q) => $q->where('status', 'pending'))
+            ->get();
         
         $parents = User::where('role', 'orang_tua')->get();
 
         return view('admin.iuran.index', compact('iuran', 'parents', 'pendingParents', 'search'));
     }
 
+    /**
+     * Generate tagihan otomatis untuk semua siswa aktif (bulanan)
+     */
     public function generate()
     {
         $bulan = Carbon::now()->format('Y-m');
@@ -50,19 +54,23 @@ class AdminIuranController extends Controller
             return back()->with('error','Tagihan bulan ini sudah ada.');
         }
 
+        // Ambil semua siswa aktif
         $students = User::where('role','siswa')
             ->whereHas('siswaProfile', fn($q) => $q->where('status','aktif'))
-            ->with('parents') // untuk mengambil parent cepat
+            ->with(['userProfile','parents']) // untuk mengambil profile & parent cepat
             ->get();
 
-        $prices = config('promo.prices');
+        // ambil pricing config (fallback jika belum ada)
+        $prices = config('promo.prices', ['none' => 325000]);
 
         DB::beginTransaction();
         try {
             foreach ($students as $student) {
-                $parent = $student->parents->first(); // jika ada lebih dr 1 parent, gunakan logic bisnis Anda
-
-                $promoType = $parent->promo_type ?? 'none';
+                // Prefer promo dari siswa profile (jika ada)
+                $promoType = $student->userProfile->promo_type ?? 'none';
+                if (!isset($prices[$promoType])) {
+                    $promoType = 'none';
+                }
                 $price = $prices[$promoType] ?? $prices['none'];
 
                 IuranBulanan::create([
@@ -75,29 +83,39 @@ class AdminIuranController extends Controller
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
+            Log::error('AdminIuranController@generate error: '.$e->getMessage());
             return back()->with('error', 'Gagal generate: ' . $e->getMessage());
         }
 
         return back()->with('success', 'Tagihan bulan ini berhasil digenerate.');
     }
 
+    /**
+     * Halaman verifikasi admin (tagihan yang pending)
+     */
     public function verifikasi()
     {
         $pending = IuranBulanan::where('status', 'pending')->with('siswa.siswaProfile')->paginate(20);
-
         return view('admin.iuran.verifikasi', compact('pending'));
     }
 
+    /**
+     * Approve single iuran (manual) — tandai paid
+     */
     public function approve($id)
     {
         $iuran = IuranBulanan::findOrFail($id);
         $iuran->update([
             'status' => 'paid',
+            'diverifikasi_oleh' => auth()->id(),
         ]);
 
         return back()->with('success', 'Pembayaran berhasil diverifikasi.');
     }
 
+    /**
+     * Bulk verify (mark multiple as paid)
+     */
     public function bulkVerify(Request $request)
     {
         $ids = $request->iuran_ids;
@@ -116,10 +134,11 @@ class AdminIuranController extends Controller
         return back()->with('success', 'Berhasil memverifikasi ' . count($ids) . ' pembayaran.');
     }
 
-    // Tampilkan list request pending
+    /**
+     * Menampilkan daftar request tagihan (admin)
+     */
     public function requests()
     {
-        // Ambil semua request billing dari orang tua
         $requests = IuranRequest::with(['parent.userProfile', 'parent.children.userProfile'])
             ->latest()
             ->paginate(15);
@@ -127,7 +146,9 @@ class AdminIuranController extends Controller
         return view('admin.iuran.requests.index', compact('requests'));
     }
 
-    // 1) menampilkan detail request (dipanggil oleh AJAX untuk modal)
+    /**
+     * Detail request (dipanggil AJAX)
+     */
     public function requestDetail($id)
     {
         $req = IuranRequest::with('parent.children.userProfile')->findOrFail($id);
@@ -144,55 +165,64 @@ class AdminIuranController extends Controller
             'students' => $students,
             'student_count' => $req->student_count,
             'months' => $req->months . ' bulan',
-            'month_list' => $req->month_list,   // ← kirim array
+            'month_list' => $req->month_list,
             'total_tagihan' => number_format($req->total_tagihan, 0, ',', '.'),
             'created_at' => $req->created_at->format('d M Y H:i')
         ]);
     }
 
-    // 2) approve request: buat IuranBulanan sesuai jumlah bulan dan aturan harga
+    /**
+     * Approve request: buat IuranBulanan sesuai month_list dan aturan harga
+     */
     public function approveRequest(Request $request, $id)
     {
-        \Log::info("APPROVE REQUEST HIT ID: $id");
         $req = IuranRequest::with('parent.children.userProfile')->findOrFail($id);
 
         if ($req->status === 'approved') {
-            return back()->with('info', 'Request sudah disetujui sebelumnya.');
+            return back()->with('info', 'Request ini sudah disetujui sebelumnya.');
         }
 
-        $months = (int) $req->months;
-        $prices = config('iuran.prices'); // ambil harga dari config
+        // ambil start month dari request (OPTION B)
+        $startMonth = $req->month; // kolom di tabel iuran_requests
+
+        if (!$startMonth) {
+            return back()->with('error', 'Data bulan awal tidak valid.');
+        }
+
+        // Ambil harga promo dari config
+        $promoPrices = config('promo.prices');
 
         DB::beginTransaction();
         try {
             $batchId = (string) Str::uuid();
             $created = 0;
 
-            // mulai bulan depan
-            $start = now()->startOfMonth()->addMonth();
+            $start = Carbon::createFromFormat('Y-m', $startMonth)->startOfMonth();
 
             foreach ($req->parent->children as $child) {
 
-                // ambil promo type siswa (default none)
                 $promoType = optional($child->userProfile)->promo_type ?? 'none';
+                $pricePerMonth = $promoPrices[$promoType] ?? $promoPrices['none'];
 
-                // harga sesuai promo
-                $pricePerMonth = $prices[$promoType] ?? $prices['none'];
+                for ($i = 0; $i < $req->months; $i++) {
 
-                for ($i = 0; $i < $months; $i++) {
                     $bulan = $start->copy()->addMonths($i)->format('Y-m');
 
-                    if (IuranBulanan::where('siswa_id', $child->id)->where('bulan', $bulan)->exists()) {
+                    // Skip jika sudah ada
+                    if (IuranBulanan::where('siswa_id', $child->id)
+                        ->where('bulan', $bulan)
+                        ->exists()) {
                         continue;
                     }
 
+                    // Buat tagihan
                     IuranBulanan::create([
-                        'siswa_id' => $child->id,
-                        'bulan' => $bulan,
-                        'jumlah' => $pricePerMonth,
-                        'status' => 'unpaid',
-                        'request_type' => 'bulk',
-                        'request_batch_id' => $batchId,
+                        'siswa_id'        => $child->id,
+                        'bulan'           => $bulan,
+                        'jumlah'          => $pricePerMonth,
+                        'status'          => 'unpaid',
+                        'request_type'    => 'bulk',
+                        'request_batch_id'=> $batchId,
                     ]);
 
                     $created++;
@@ -200,17 +230,20 @@ class AdminIuranController extends Controller
             }
 
             $req->update(['status' => 'approved']);
+
             DB::commit();
 
-            return back()->with('success', "Berhasil generate $created tagihan untuk {$months} bulan.");
+            return back()->with('success', "Berhasil generate {$created} tagihan sesuai request.");
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error('approveRequest error: '.$e->getMessage());
-            return back()->with('error', 'Gagal generate tagihan saat approve.');
+            return back()->with('error', 'Gagal generate tagihan: ' . $e->getMessage());
         }
     }
 
-    // 3) generateBulk (jika admin memanggil generateBulk dengan request_id, update pricing logic di sini juga)
+
+    /**
+     * generateBulk (jika admin memanggil generateBulk dengan request_id, update pricing logic di sini juga)
+     */
     public function generateBulk(Request $request)
     {
         $request->validate([
@@ -220,7 +253,7 @@ class AdminIuranController extends Controller
         ]);
 
         $req = IuranRequest::findOrFail($request->request_id);
-        $parent = User::findOrFail($request->parent_id);
+        $parent = User::with('children.userProfile')->findOrFail($request->parent_id);
         $months = (int) $req->months;
 
         $studentIds = $parent->children->pluck('id')->toArray();
@@ -230,10 +263,13 @@ class AdminIuranController extends Controller
 
         $start = $request->start_month
             ? Carbon::createFromFormat('Y-m', $request->start_month)->startOfMonth()
-            : now()->startOfMonth()->addMonth();
+            : now()->startOfMonth();
 
         $batchId = (string) Str::uuid();
         $created = 0;
+
+        // ambil pricing config
+        $prices = config('promo.prices');
 
         DB::beginTransaction();
         try {
@@ -245,14 +281,16 @@ class AdminIuranController extends Controller
                         continue;
                     }
 
-                    // harga per bulan (sesuai koreksi)
-                    if ($months <= 3) {
-                        $nominal = 325000;
-                    } elseif ($months <= 6) {
-                        $nominal = 300000;
+                    $siswa = User::with('userProfile')->find($siswaId);
+                    $promoType = $siswa->userProfile->promo_type ?? 'none';
+                    $promoPrice = $prices[$promoType] ?? $prices['none'];
+
+                    if ($months == 3) {
+                        $nominal = ($promoType === 'none') ? 325000 : $promoPrice;
+                    } elseif ($months == 6) {
+                        $nominal = ($promoType === 'none') ? 300000 : $promoPrice;
                     } else {
-                        $siswa = User::find($siswaId);
-                        $nominal = $siswa->userProfile->nominal_iuran ?? 0;
+                        throw new \Exception("Invalid months: {$months}");
                     }
 
                     IuranBulanan::create([
@@ -274,10 +312,8 @@ class AdminIuranController extends Controller
             return back()->with('success', "Berhasil generate $created tagihan untuk $months bulan mulai {$start->format('Y-m')} (batch: $batchId).");
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error('generateBulk error: '.$e->getMessage());
+            Log::error('generateBulk error: '.$e->getMessage());
             return back()->with('error', 'Gagal generate tagihan.');
         }
     }
-
 }
-
