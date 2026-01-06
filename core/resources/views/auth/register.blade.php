@@ -53,7 +53,7 @@
     </div>
 
     <button type="button" id="add-siswa"
-        class="bg-green-700 hover:bg-green-800 text-white rounded-xl px-4 py-2">+ Tambah Siswa</button>
+        class="bg-green-700 hover:bg-green-800 text-white rounded-xl px-4 py-2">+ Tambah Siswa</button><br><small class="italic">Klik tambah siswa jika lebih dari 1 anak</small>
 
     <div class="mt-6">
         <button type="submit"
