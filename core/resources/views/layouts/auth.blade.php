@@ -49,9 +49,29 @@
     {{-- Kolom kanan (form area) --}}
     <div class="w-full md:w-1/2 bg-gray-50 flex flex-col overflow-y-auto">
         <div class="flex-grow flex items-center justify-center p-6 md:p-10">
-            <div class="w-full max-w-2xl bg-white rounded-2xl shadow p-8 md:p-10 overflow-y-auto max-h-[90vh]">
-                <h2 class="text-2xl font-semibold text-center mb-6">@yield('title')</h2>
-                @yield('content')
+            <div class="w-full max-w-2xl overflow-y-auto max-h-[90vh]">
+                <div class="lg:hidden">
+                    {{-- Teks tengah --}}
+                    <div class="text-center max-w-md">
+                        <img src="{{ asset('images/SATRIASILIWANGIFONT-1.png') }}" 
+                            alt="Logo KlubMan" 
+                            class="w-40 md:w-48 object-contain text-center mx-auto">
+                        <h2 class="text-2l font-bold leading-tight text-green-800 pt-2">SATRIA SILIWANGI BASKETBALL</h2>
+                        <p class="text-xs text-green opacity-90 uppercase pb-3">
+                            Club Management System
+                        </p>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl shadow p-8 md:p-10">
+                    <h2 class="text-1xl uppercase font-semibold text-center mb-6">@yield('title')</h2>
+                    @yield('content')
+                </div>
+                {{-- Gambar dekoratif bawah --}}
+                <div class="text-center max-w-md mt-10">
+                    <p class="text-xs text-black-100 opacity-90">
+                        SS DIGITAL V.2.0 &copy; 2026 // by. Fudge Digital Studio 
+                    </p>
+                </div>
             </div>
         </div>
     </div>

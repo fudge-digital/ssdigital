@@ -15,7 +15,7 @@
                 <div class="flex gap-2">
                     {{-- GENERATE BULAN INI --}}
                     <form action="{{ route('admin.iuran.generate') }}" method="POST"
-                          onsubmit="return confirm('Yakin generate tagihan bulan ini? Jika sudah ada akan ditolak.')">
+                        onsubmit="return confirm('Yakin generate tagihan bulan ini? Jika sudah ada akan ditolak.')">
                         @csrf
                         <button type="submit"
                             class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition shadow">
