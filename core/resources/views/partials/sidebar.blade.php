@@ -1,4 +1,4 @@
-<aside class="bg-[#064e3b] text-white w-64 flex flex-col">
+<aside class="bg-[#064e3b] text-white w-64 flex flex-col min-h-screen">
     <div class="px-6 py-4 text-2xl font-bold border-b border-green-700">
         <img src="{{ asset('images/SATRIASILIWANGIFONT-1.png') }}" 
             alt="Logo KlubMan" 

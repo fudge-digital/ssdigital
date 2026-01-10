@@ -3,7 +3,7 @@
 @section('title', 'Dashboard Orang Tua')
 
 @section('content')
-<div class="container mx-auto px-4 py-6" x-data="{ openModal: false }">
+<div class="container mx-auto px-3 sm:px-4 py-4 md:py-6" x-data="{ openModal: false }">
 
     <h2 class="text-2xl font-bold mb-6 text-gray-800">
         Halo, {{ $parent->name }} 👋
@@ -11,7 +11,7 @@
 
     {{-- CARD LIST SISWA --}}
     <h4 class="col-span-full text-lg font-semibold text-gray-700 mb-4">Daftar Siswa Anda</h4>
-    <div class="grid md:grid-cols-3 lg:grid-cols-3 gap-6 mb-10">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mb-10">
         @forelse($students as $student)
             <div class="bg-white shadow-md rounded-2xl p-5 border">
                 <div class="flex items-center justify-between mb-3">
@@ -25,23 +25,23 @@
                 <p class="text-gray-600 text-sm mb-1">Email: {{ $student->email }}</p>
                 <p class="text-gray-600 text-sm mb-1">Usia: {{ $student->profile->usia }} tahun</p>
                 <p class="text-gray-600 text-sm">Kategori Umur: {{ $student->profile->kelompok_umur }} {{ $student->profile->jenis_kelamin_label }}</p>
-                <div class="mt-4">
+                <div class="mt-4 flex flex-col sm:flex-row gap-2">
                     @if($student->siswaProfile->status !== 'tidak_aktif')
                         <a href="{{ route('siswa.show', $student->id) }}" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded text-xs">
                             Detail Siswa
                         </a>
                     @else
-                        <a href="#" class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-3 rounded text-xs ml-2 cursor-not-allowed opacity-50">
+                        <a href="#" class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-3 rounded text-xs md:ml-2 cursor-not-allowed opacity-50">
                             Detail Siswa
                         </a>
                     @endif
                     
                     @if($student->siswaProfile->status !== 'tidak_aktif')
-                        <a href="{{ route('siswa.edit', $student->id) }}" class="bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded text-xs ml-2">
+                        <a href="{{ route('siswa.edit', $student->id) }}" class="bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded text-xs md:ml-2">
                             Edit Data Siswa
                         </a>
                     @else
-                        <a href="#" class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-3 rounded text-xs ml-2 cursor-not-allowed opacity-50">
+                        <a href="#" class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-3 rounded text-xs md:ml-2 cursor-not-allowed opacity-50">
                             Edit Data Siswa
                         </a>
                     @endif
@@ -54,7 +54,7 @@
 
     {{-- Documents & Jadwal Latihan--}}
     @if($student->siswaProfile->status === 'aktif')
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <h2 class="col-span-full text-lg font-semibold text-gray-700 mb-4">Jadwal Latihan Bulan {{ now()->format('F Y') }}</h2>
                 <div class="bg-white shadow-lg rounded-xl px-4 py-4 pb-4">
@@ -76,7 +76,7 @@
     {{-- INFO PEMBAYARAN --}}
     @if ($nonActiveStudents->count() > 0) 
         <h3 class="text-lg font-semibold mt-6">🔔 Informasi Pendaftaran</h3>
-        <div class="grid md:grid-cols-3 lg:grid-cols-3 gap-6 mb-10">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
 
             <div class="text-sm p-6 text-gray-900">
                 <ol class="list-decimal list-inside space-y-2">
@@ -103,13 +103,13 @@
                     <p class="font-semibold mb-3">Silakan pilih jenis pendaftaran:</p>
 
                     <form method="GET" action="{{ url()->current() }}" class="space-y-3">
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-3 flex-wrap">
                             <input type="radio" name="regType" id="regReregister" value="Daftar_Ulang"
                                 {{ request('regType') === 'Daftar_Ulang' ? 'checked' : '' }}>
                             <label for="regReregister" class="cursor-pointer font-medium text-sm">Registrasi Ulang</label>
                         </div>
 
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-3 flex-wrap">
                             <input type="radio" name="regType" id="regNew" value="Pendaftaran_Baru"
                                 {{ request('regType') === 'Pendaftaran_Baru' ? 'checked' : '' }}>
                             <label for="regNew" class="cursor-pointer font-medium text-sm">Pendaftaran Baru</label>
@@ -167,7 +167,7 @@
                         @endphp
 
                         <a href="https://wa.me/62895606432020?text={{ urlencode($message) }}" target="_blank"
-                            class="inline-flex items-center gap-2 px-5 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg">
+                            class="inline-flex items-center gap-2 px-4 py-2 text-sm md:text-base break-words bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg">
                             <i class="fa-brands fa-whatsapp text-lg"></i> WhatsApp Admin
                         </a>
                     @elseif($pembayaran->status === 'verified')
@@ -224,7 +224,7 @@
                             <div class="mb-4">
                                 <label class="block mb-1 font-medium">Upload Bukti Pembayaran</label>
                                 <input type="file" name="bukti_pembayaran" accept="image/*" required
-                                    class="border border-gray-300 bg-white rounded-lg p-2 w-full text-sm">
+                                    class="border border-gray-300 bg-white rounded-lg p-2 w-full text-sm max-w-full">
                             </div>
 
                             <button type="submit"
@@ -250,7 +250,7 @@
                         <p class="text-xs mt-4">Jika menurut anda verifikasi terlalu lama dan sudah lebih dari 1x24 jam, anda bisa menghubungi admin kami melalui tombol WhatsApp dibawah.</p>
 
                         <a href="https://wa.me/62895606432020?text={{ urlencode($message) }}" target="_blank"
-                            class="inline-flex items-center gap-2 px-5 py-1 mt-5 mb-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-full shadow">
+                            class="inline-flex items-center gap-2 px-4 py-2 mt-5 mb-2 text-sm md:text-base break-words bg-green-500 hover:bg-green-600 text-white font-medium rounded-full shadow">
                             <i class="fa-brands fa-whatsapp text-lg"></i> WhatsApp Admin
                         </a>
                     </div>
@@ -267,7 +267,7 @@
                         @endphp
 
                         <a href="https://wa.me/62895606432020?text={{ urlencode($message) }}" target="_blank"
-                            class="inline-flex items-center gap-2 px-5 py-2 mt-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg">
+                            class="inline-flex items-center gap-2 px-5 py-2 mt-3 text-sm md:text-base break-words bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg">
                             <i class="fa-brands fa-whatsapp text-lg"></i> WhatsApp Admin
                         </a>
                     </div>

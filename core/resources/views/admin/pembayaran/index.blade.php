@@ -93,14 +93,13 @@
                             @endif
                         </td>
                         <td class="px-4 py-3 text-center space-x-2">
-                            @if($p->status !== 'verified')
+                            @if($p->status === 'verified')
                                 <!-- Button trigger modal -->
                                 <button
                                     class="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 rounded-lg"
                                     onclick="openVerifyModal({{ $p->id }})">
                                     Verifikasi
                                 </button>
-
                                 <!-- Modal -->
                                 <div id="verifyModal-{{ $p->id }}" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                                     <div class="bg-white rounded-xl shadow-lg w-96 p-6">
@@ -124,6 +123,8 @@
                                         </div>
                                     </div>
                                 </div>
+                            @else
+                                <span class="bg-gray-400 text-white text-xs px-3 py-1 rounded-lg">Terverifikasi</span>
                             @endif
 
                             @if($p->status === 'verified')
